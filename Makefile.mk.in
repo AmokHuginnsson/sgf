@@ -64,7 +64,7 @@ include $(DIR_ROOT)/_aux/mk/7_func.mk
 
 $(eval $(call PREPARE_VARIABLES,$(LIB_NAME),$(LIB_SRC)))
 
-LIBS_sgf = -lc -lhcore
+LIBS_sgf = -lc -lhcore$(LIB_INFIX)
 
 -include $(DIR_ROOT)/local.mk
 
