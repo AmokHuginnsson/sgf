@@ -1,0 +1,184 @@
+# $Id$
+#
+#---        `sgf' (c) 1978 by Marcin 'Amok' Konarski             ---
+#
+#	Makefile.mk.in - this file is integral part of `sgf' project.
+#
+#	i.  You may not make any changes in Copyright information.
+#	ii. You must attach Copyright information to any part of every copy
+#	    of this software.
+#
+#Copyright:
+#
+# You are free to use this program as is, you can redistribute binary
+# package freely but:
+#  1. You cannot use any part of sources of this software.
+#  2. You cannot redistribute any part of sources of this software.
+#  3. No reverse engineering is allowed.
+#  4. If you want redistribute binary package you cannot demand any fees
+#     for this software.
+#     You cannot even demand cost of the carrier (CD for example).
+#  5. You cannot include it to any commercial enterprise (for example 
+#     as a free add-on to payed software or payed newspaper).
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. Use it at your own risk.
+
+$(foreach DIR,$(subst /, ,$(CURDIR)), $(eval $(eval DIR_ROOT_TEST=$(DIR_ROOT_TEST)/$(DIR)) $(if $(wildcard $(DIR_ROOT_TEST)/Makefile.mk.in),export DIR_ROOT ?= $(DIR_ROOT_TEST))))
+LIB_NAME     = sgf
+VERSION      = 0
+SUBVERSION   = 0
+EXTRAVERSION = 0
+LIB_SRC      = src
+PREFIX       = @prefix@
+DIR_LIB      = $(PREFIX)/lib
+DIR_HEADERS  = $(PREFIX)/include
+DIR_DOC      = $(PREFIX)/share/doc/$(LIB_NAME)
+DIRS         = $(DIR_LIB) $(DIR_BUILD)
+HAPI_HEADER  = include/$(LIB_NAME)/$(LIB_NAME).hxx
+LD_SO_CONF   = $(DIR_LIB)/ld.so.conf
+DO_@DO_TARGET@=1
+LIB_PREFIX   = @LIB_PREFIX@
+ifeq ($(LIB_PREFIX),lib)
+LIB_SUFFIX   = so.$(RELEASE)
+LIB_ARCHIVE_SUFFIX = a
+else
+LIB_SUFFIX   = dll
+LIB_ARCHIVE_SUFFIX = dll.a
+endif
+CTAGS   = @CTAGS@
+GITID   = @GITID@
+RANLIB  = @RANLIB@
+INSTALL = @INSTALL@
+include $(DIR_ROOT)/_aux/mk/1_basic.mk
+include $(DIR_ROOT)/_aux/mk/2_term.mk
+include $(DIR_ROOT)/_aux/mk/3_suffix.mk
+include $(DIR_ROOT)/_aux/mk/4_wrapper.mk
+include $(DIR_ROOT)/_aux/mk/5_flags.mk
+CXXFLAGS+= @EXTRA_CXXFLAGS@ @DEFS@ \
+					-I$(DIR_ROOT) -I$(DIR_BUILD) -I/usr/local/include
+LXXFLAGS+= -L. -L/usr/local/lib -shared @EXTRA_LXXFLAGS@
+
+include $(DIR_ROOT)/_aux/mk/7_func.mk
+
+$(eval $(call PREPARE_VARIABLES,$(LIB_NAME),$(LIB_SRC)))
+
+LIBS_sgf = -lc -lhcore
+
+-include $(DIR_ROOT)/local.mk
+
+#-------------------------------------------------------------------
+
+#	this is "rule" for linking libs
+
+.SECONDEXPANSION:
+
+$(LIB_PREFIX)%$(LIB_INFIX).$(LIB_SUFFIX): $$(OBJS_$$(*)) $$(DEPS_$$(*))
+	@$(call msg,printf "%b" "Linking \`$(@)' ... $(BOLD)$(RED)";) \
+	$(call invoke,$(LXX) $(LIBS) $(LXXFLAGS) @SONAME_FLAG@ -o $(@) \
+			@START_GROUP@ $(OBJS_$(*)) @END_GROUP@ $(LIBS_$(*)) 2>&1 | tee -a make.log) ; $(call msg, printf "%b" "$(RS)";)
+	@test -f $(@) || exit 1
+ifeq ($(LIB_PREFIX),lib)
+	@$(call invoke,$(AR) $(ARFLAGS) lib$(*)$(LIB_INFIX).$(LIB_ARCHIVE_SUFFIX) $(OBJS_$(*)) | tee -a make.log ) ; \
+	$(call invoke,$(RANLIB) lib$(*)$(LIB_INFIX).$(LIB_ARCHIVE_SUFFIX))
+endif # just to allow shared linking during the build
+	@$(call invoke,ln -sf lib$(*)$(LIB_INFIX).so.$(RELEASE) lib$(*)$(LIB_INFIX).so) \
+	$(call msg,&& printf "%b$(NL)" "done.$(CL)")
+
+define INSTALL_TARGET
+	$(call msg,printf "%b" "Installing \`$(LIB_PREFIX)$(1)$(LIB_INFIX).$(LIB_SUFFIX)' ... $(BOLD)$(RED)";) \
+	$(call invoke,$(INSTALL) $(LIB_PREFIX)$(1)$(LIB_INFIX).$(LIB_SUFFIX) lib$(1)$(LIB_INFIX).$(LIB_ARCHIVE_SUFFIX) $(DIR_LIB)/ ) ; \
+	$(call msg, printf "%b" "$(RS)" && ) \
+	if [ "x$(LIB_PREFIX)" = "xlib" ] ; then \
+		$(call invoke,ln -sf lib$(1)$(LIB_INFIX).so.$(RELEASE) $(DIR_LIB)/lib$(1)$(LIB_INFIX).so.$(VERSION).$(SUBVERSION) ) && \
+		$(call invoke,ln -sf lib$(1)$(LIB_INFIX).so.$(VERSION).$(SUBVERSION) $(DIR_LIB)/lib$(1)$(LIB_INFIX).so.$(VERSION) ) && \
+		$(call invoke,ln -sf lib$(1)$(LIB_INFIX).so.$(VERSION) $(DIR_LIB)/lib$(1)$(LIB_INFIX).so ) ; \
+	fi && \
+	$(call msg,printf "%b$(NL)" "done.$(CL)" && )
+endef
+
+define UNINSTALL_TARGET
+	$(call msg,printf "%b" "Uninstalling \`$(LIB_PREFIX)$(1)$(LIB_INFIX).$(LIB_SUFFIX)' ... $(BOLD)$(RED)";) \
+	$(call invoke,/bin/rm -f $(DIR_LIB)/$(LIB_PREFIX)$(1)$(LIB_INFIX).$(LIB_SUFFIX) $(DIR_LIB)/lib$(1)$(LIB_INFIX).$(LIB_ARCHIVE_SUFFIX) ) ; \
+	$(call msg, printf "%b" "$(RS)" && ) \
+	if [ "x$(LIB_PREFIX)" = "xlib" ] ; then \
+		$(call invoke,/bin/rm -f $(DIR_LIB)/lib$(1)$(LIB_INFIX).so.$(VERSION).$(SUBVERSION) \
+			$(DIR_LIB)/lib$(1)$(LIB_INFIX).so.$(VERSION) $(DIR_LIB)/lib$(1)$(LIB_INFIX).so ) ; \
+	fi && \
+	$(call msg,printf "%b$(NL)" "done.$(CL)" && )
+endef
+
+include $(DIR_ROOT)/_aux/mk/b_implicit-compile.mk
+#------------------------------------------------------------------------
+
+include $(DIR_ROOT)/_aux/mk/c_target-default.mk
+
+#phony targets
+.PHONY: all bin clean clean-dep cov debug dep doc install install-environment mrproper relassert reldeb release prof purge static stats tags uninstall
+.NOTPARALLEL: $(HAPI_HEADER) $(LD_SO_CONF)
+
+$(TARGET): $(DIRS) $(TARGETS) $(HAPI_HEADER)
+
+all: $(TARGET)
+
+$(foreach IT,$(DIRS),$(eval $(call MAKE_DIR,$(IT))))
+
+environment: $(DIRS)
+
+install: all
+	@$(call INSTALL_TARGET,$(LIB_NAME)) \
+	/bin/mkdir -p $(DIR_HEADERS) && /bin/cp -fRp $(DIR_BUILD)/include/$(LIB_NAME) $(DIR_HEADERS)/ && \
+	$(call msg,printf "%b" "making cache ... " && ) \
+	printf "%b\n" $(DIR_LIB) > $(DIR_LIB)/ld.so.conf && \
+	/bin/cp -f $(DIR_ROOT)/_aux/mkcache $(DIR_LIB) && \
+	cd $(DIR_LIB) && $(DIR_LIB)/mkcache \
+	$(call msg,&& printf "%b$(NL)" "done.$(CL)")
+
+uninstall:
+	@$(call msg,printf "%b" "Uninstalling the library ... " && ) \
+	$(call UNINSTALL_TARGET,$(LIB_NAME)) \
+	$(call invoke,/bin/rm -fr $(DIR_HEADERS)/$(LIB_NAME)) \
+	$(call msg,&& printf "%b$(NL)" "done.$(CL)")
+
+install-environment:
+	@cd $(DIR_ROOT) && ./_aux/msh $(PREFIX)
+
+$(HAPI_HEADER): $(HDRS)
+	@printf "%b" "Making headers ... "; \
+	env LIB_NAME=$(LIB_NAME) DIR_ROOT="$(DIR_ROOT)" DIR_BUILD="$(DIR_BUILD)" HDRS="$(HDRS)" $(DIR_ROOT)/_aux/mkheaders; \
+	printf "%b$(NL)" "done.$(CL)$(BOLD)"; \
+	printf "%b\n" "All OK!$(RS)";
+
+clean-dep:
+	@$(FIND) . -name '*.$(DS)' | xargs /bin/rm -f
+
+clean: clean-dep
+	@/bin/rm -f $(OBJS); \
+	sh -c '. $(DIR_ROOT)/_aux/clean-lib.sh && clean .'
+
+mrproper: clean
+	@printf "%b" "Purging ... "; \
+	/bin/rm -rf include make.log; \
+	$(FIND) . \( -name .git -prune -name 'tags' -or -name '.depend' -or -name '*.a' \) -a ! -name .git \
+| xargs /bin/rm -f; \
+	printf "%b\n" "done."
+
+include $(DIR_ROOT)/_aux/mk/d_target-tools.mk
+
+doc: $(SRCS) $(HDRS)
+	@cd $(DIR_ROOT) && doxygen _aux/doxygenrc 2>&1 | grep 'is not documented'; \
+	cat doc/doxygen.css >> doc/html/doxygen.css
+
+stats:
+	@cd $(DIR_ROOT) && ./_aux/stats $(DIR_ROOT)
+
+flint:
+	@flint -b _aux/flint.lnt hcore/*.$(SS) hconsole/*.$(SS) tools/*.$(SS) \
+						dbwrapper/db_driver_loader.$(SS) dbwrapper/dbwrapper.$(SS) \
+						dbwrapper/hdatabase.$(SS) dbwrapper/hrecordset.$(SS) \
+						hdata/*.$(SS) \
+| awk '{gsub(" \\(compare with line [^)]+\\)","");print}'|head -20
+
+include $(DIR_ROOT)/_aux/mk/e_deps.mk
+
+# vim:ts=2

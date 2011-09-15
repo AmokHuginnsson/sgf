@@ -1,0 +1,2 @@
+?package(sgf):needs=text|vc section=Apps/Net\
+  title="sgf" command="/usr/bin/sgf"
