@@ -29,6 +29,7 @@ LIB_NAME     = sgf
 VERSION      = 0
 SUBVERSION   = 0
 EXTRAVERSION = 0
+LIB_VERSION  = $(VERSION).$(SUBVERSION).$(EXTRAVERSION)
 LIB_SRC      = src
 PREFIX       = @prefix@
 DIR_LIB      = $(PREFIX)/lib
@@ -145,7 +146,7 @@ install-environment:
 
 $(HAPI_HEADER): $(HDRS)
 	@printf "%b" "Making headers ... "; \
-	env LIB_NAME=$(LIB_NAME) DIR_ROOT="$(DIR_ROOT)" DIR_BUILD="$(DIR_BUILD)" HDRS="$(HDRS)" $(DIR_ROOT)/_aux/mkheaders; \
+	env LIB_NAME=$(LIB_NAME) LIB_VERSION=$(LIB_VERSION) DIR_ROOT="$(DIR_ROOT)" DIR_BUILD="$(DIR_BUILD)" HDRS="$(HDRS)" $(DIR_ROOT)/_aux/mkheaders; \
 	printf "%b$(NL)" "done.$(CL)$(BOLD)"; \
 	printf "%b\n" "All OK!$(RS)";
 
