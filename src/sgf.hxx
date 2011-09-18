@@ -32,26 +32,20 @@ Copyright:
 #include <yaal/hcore/htree.hxx>
 #include <yaal/hcore/hstreaminterface.hxx>
 
-namespace sgf
-{
+namespace sgf {
 
 char const* non_space( char const*, char const* );
 
-class SGF
-	{
+class SGF {
 public:
-	struct GAME_TYPE
-		{
-		typedef enum
-			{
+	struct GAME_TYPE {
+		typedef enum {
 			GO = 1,
 			GOMOKU = 4
-			} game_type_t;
-		};
-	struct ERROR
-		{
-		typedef enum
-			{
+		} game_type_t;
+	};
+	struct ERROR {
+		typedef enum {
 			UNEXPECTED_EOF = 0,
 			UNEXPECTED_DATA = 1,
 			GT_OPEN_EXPECTED = 2,
@@ -62,41 +56,35 @@ public:
 			NODE_MARK_EXPECTED = 7,
 			BAD_GAME_TYPE = 8,
 			BAD_FILE_FORMAT = 9
-			} code_t;
-		};
-	struct TERM
-		{
+		} code_t;
+	};
+	struct TERM {
 		static char const GT_OPEN = '(';
 		static char const GT_CLOSE = ')';
 		static char const PROP_VAL_OPEN = '[';
 		static char const PROP_VAL_CLOSE = ']';
 		static char const NODE_MARK = ';';
 		static char const ESCAPE = '\\';
-		};
-	struct Game
-		{
-		struct Move
-			{
-			struct Player
-				{
-				typedef enum
-					{
+	};
+	struct Game {
+		struct Move {
+			struct Player {
+				typedef enum {
 					BLACK,
 					WHITE,
 					UNSET
-					} player_t;
-				};
+				} player_t;
+			};
 			char _coord[3];
 			yaal::hcore::HString _comment;
 			Move( void )
 				: _coord(), _comment()
 				{ }
 			Move( int col_, int row_ )
-				: _coord(), _comment()
-				{
+				: _coord(), _comment() {
 				_coord[0] = static_cast<char>( col_ + 'a' );
 				_coord[1] = static_cast<char>( row_ + 'a' );
-				}
+			}
 			Move( char const* const coord_ )
 				: _coord(), _comment()
 				{ coord( coord_ ); }
@@ -105,30 +93,24 @@ public:
 				{ coord( coord_ ); }
 			char const* coord( void ) const
 				{ return ( _coord ); }
-			void coord( yaal::hcore::HString const& coord_ )
-				{
-				if ( coord_.get_length() >= 2 )
-					{
+			void coord( yaal::hcore::HString const& coord_ ) {
+				if ( coord_.get_length() >= 2 ) {
 					_coord[0] = coord_[0];
 					_coord[1] = coord_[1];
-					}
-				else
+				} else
 					_coord[0] = _coord[1] = 0;
-				}
-			void coord( char const* coord_ )
-				{
+			}
+			void coord( char const* coord_ ) {
 				_coord[0] = coord_[0];
 				_coord[1] = coord_[1];
-				}
-			int col( void ) const
-				{
+			}
+			int col( void ) const {
 				return ( _coord[0] - 'a' );
-				}
-			int row( void ) const
-				{
+			}
+			int row( void ) const {
 				return ( _coord[1] - 'a' );
-				}
-			};
+			}
+		};
 		typedef Move::Player Player;
 		static int const RESIGN = 0xffff;
 		static int const TIME = 0x7fff;
@@ -159,7 +141,7 @@ public:
 		void add_stone( Player::player_t, Move const& );
 		game_tree_t::node_t move( game_tree_t::node_t, Player::player_t, int, int );
 		void clear( void );
-		};
+	};
 	typedef Game::Move Move;
 	typedef Game::Move::Player Player;
 private:
@@ -194,7 +176,7 @@ private:
 	void save_move( Player::player_t, Game::game_tree_t::const_node_t, yaal::hcore::HStreamInterface& );
 	SGF( SGF const& );
 	SGF& operator = ( SGF const& );
-	};
+};
 
 typedef yaal::hcore::HExceptionT<SGF> SGFException;
 
