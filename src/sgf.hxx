@@ -139,7 +139,7 @@ public:
 			{ }
 		void add_stone( Player::player_t, int, int );
 		void add_stone( Player::player_t, Move const& );
-		game_tree_t::node_t move( game_tree_t::node_t, Player::player_t, int, int );
+		game_tree_t::node_t move( game_tree_t::node_t, int, int );
 		void clear( void );
 	};
 	typedef Game::Move Move;
@@ -163,7 +163,7 @@ public:
 	void save( yaal::hcore::HStreamInterface& );
 	void clear( void );
 	void add_stone( Player::player_t, int, int );
-	Game::game_tree_t::node_t move( Game::game_tree_t::node_t, Player::player_t, int, int );
+	Game::game_tree_t::node_t move( Game::game_tree_t::node_t, int, int );
 private:
 	void parse_game_tree( void );
 	void parse_sequence( void );

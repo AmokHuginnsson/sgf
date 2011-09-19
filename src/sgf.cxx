@@ -332,9 +332,9 @@ void SGF::add_stone( Player::player_t player_, int col_, int row_ ) {
 	M_EPILOG
 }
 
-SGF::Game::game_tree_t::node_t SGF::move( Game::game_tree_t::node_t node_, Player::player_t player_, int col_, int row_ ) {
+SGF::Game::game_tree_t::node_t SGF::move( Game::game_tree_t::node_t node_, int col_, int row_ ) {
 	M_PROLOG
-	return ( _game.move( node_, player_, col_, row_ ) );
+	return ( _game.move( node_, col_, row_ ) );
 	M_EPILOG
 }
 
@@ -355,7 +355,7 @@ void SGF::Game::add_stone( Player::player_t player_, Move const& move_ ) {
 	M_EPILOG
 }
 
-SGF::Game::game_tree_t::node_t SGF::Game::move( game_tree_t::node_t node_, Player::player_t, int col_, int row_ ) {
+SGF::Game::game_tree_t::node_t SGF::Game::move( game_tree_t::node_t node_, int col_, int row_ ) {
 	M_PROLOG
 	return ( &*node_->add_node( Move( col_, row_ ) ) );
 	M_EPILOG
