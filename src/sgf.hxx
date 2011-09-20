@@ -161,10 +161,14 @@ public:
 	SGF( GAME_TYPE::game_type_t, yaal::hcore::HString const& = "libsgf" );
 	void load( yaal::hcore::HStreamInterface& );
 	void save( yaal::hcore::HStreamInterface& );
+	void move( int, int );
 	void clear( void );
 	void add_stone( Player::player_t, int, int );
-	Game::game_tree_t::node_t move( Game::game_tree_t::node_t, int, int );
+	void set_player( Player::player_t, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
+	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
+	void add_comment( yaal::hcore::HString const& );
 private:
+	Game::game_tree_t::node_t move( Game::game_tree_t::node_t, int, int );
 	void parse_game_tree( void );
 	void parse_sequence( void );
 	void parse_node( void );

@@ -54,6 +54,47 @@ SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	_currentMove( NULL ), _app( app_ ) {
 }
 
+void SGF::move( int col_, int row_ ) {
+	M_PROLOG
+	if ( ! _currentMove )
+		_currentMove = _game._tree.create_new_root();
+	_currentMove = &*_currentMove->add_node( Move( col_, row_ ) );
+	return;
+	M_EPILOG
+}
+
+void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name_, yaal::hcore::HString const& rank_ ) {
+	M_PROLOG
+	if ( player_ == Player::BLACK ) {
+		_game._blackName = name_;
+		_game._blackRank = rank_;
+	} else {
+		_game._whiteName = name_;
+		_game._whiteRank = rank_;
+	}
+	return;
+	M_EPILOG
+}
+
+void SGF::set_info( Player::player_t player_, int gobanSize_, int handicap_, double komi_, int time_, yaal::hcore::HString const& place_ ) {
+	M_PROLOG
+	_game._firstToMove = player_;
+	_game._gobanSize = gobanSize_;
+	_game._handicap = handicap_;
+	_game._komi = komi_;
+	_game._time = time_;
+	_game._place = place_;
+	return;
+	M_EPILOG
+}
+
+void SGF::add_comment( yaal::hcore::HString const& comment_ ) {
+	M_PROLOG
+	_game._comment += comment_;
+	return;
+	M_EPILOG
+}
+
 char const* non_space( char const* first, char const* last ) {
 	for ( ; first != last ; ++ first ) {
 		if ( ! ::memchr( _whiteSpace_.data(), *first, _whiteSpace_.size() ) )
