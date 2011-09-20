@@ -307,12 +307,12 @@ void SGF::parse_property_value( prop_values_t& values_ ) {
 	M_EPILOG
 }
 
-void SGF::save( HStreamInterface& stream_ ) {
+void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
-	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << "]\n"
-		<< "SZ[" << _game._gobanSize << "]KM[" << setw( 1 ) << _game._komi << "]TM[" << _game._time << "]\n"
-		<< "PB[" << _game._blackName << "]PW[" << _game._whiteName << "]\n"
-		<< "BR[" << _game._blackRank << "]WR[" << _game._whiteRank << "]\n";
+	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << ( noNL_ ? "]" : "]\n" )
+		<< "SZ[" << _game._gobanSize << "]KM[" << setw( 1 ) << _game._komi << "]TM[" << _game._time << ( noNL_ ? "]" : "]\n" )
+		<< "PB[" << _game._blackName << "]PW[" << _game._whiteName << ( noNL_ ? "]" : "]\n" )
+		<< "BR[" << _game._blackRank << "]WR[" << _game._whiteRank << ( noNL_ ? "]" : "]\n" );
 	if ( ! _game._comment.is_empty() ) {
 		_cache = _game._comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
@@ -328,13 +328,13 @@ void SGF::save( HStreamInterface& stream_ ) {
 		for ( Game::preset_t::const_iterator it( _game._whitePreset.begin() ), end( _game._whitePreset.end() ); it != end; ++ it )
 			stream_ << '[' << it->coord() << ']';
 	}
-	save_variations( _game._firstToMove, _game._tree.get_root(), stream_ );
-	stream_ << ")" << endl;
+	save_variations( _game._firstToMove, _game._tree.get_root(), stream_, noNL_ );
+	stream_ << ( noNL_ ? ")" : ")\n" );
 	return;
 	M_EPILOG
 }
 
-void SGF::save_move( Player::player_t of_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_ ) {
+void SGF::save_move( Player::player_t of_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_, bool ) {
 	M_PROLOG
 	stream_ << ';' << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (**node_).coord() << ']';
 	if ( ! (**node_)._comment.is_empty() ) {
@@ -346,20 +346,20 @@ void SGF::save_move( Player::player_t of_, Game::game_tree_t::const_node_t node_
 	M_EPILOG
 }
 
-void SGF::save_variations( Player::player_t from_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_ ) {
+void SGF::save_variations( Player::player_t from_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	int childCount( 0 );
 	while ( ( childCount = static_cast<int>( node_->child_count() ) ) == 1 ) {
 		node_ = &*node_->begin();
-		save_move( from_, node_, stream_ );
+		save_move( from_, node_, stream_, noNL_ );
 		from_ = ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK );
 	}
 	if ( childCount > 1 ) /* We have variations. */ {
 		for ( Game::game_tree_t::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
-			stream_ << endl << '(';
-			save_move( from_, &*it, stream_ );
-			save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_ );
-			stream_ << ')' << endl;
+			stream_ << ( noNL_ ? "(" : "\n(" );
+			save_move( from_, &*it, stream_, noNL_ );
+			save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_, noNL_ );
+			stream_ << ( noNL_ ? ")" : ")\n" );
 		}
 	}
 	return;

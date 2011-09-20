@@ -160,7 +160,7 @@ private:
 public:
 	SGF( GAME_TYPE::game_type_t, yaal::hcore::HString const& = "libsgf" );
 	void load( yaal::hcore::HStreamInterface& );
-	void save( yaal::hcore::HStreamInterface& );
+	void save( yaal::hcore::HStreamInterface&, bool = false );
 	void move( int, int );
 	void clear( void );
 	void add_stone( Player::player_t, int, int );
@@ -176,8 +176,8 @@ private:
 	yaal::hcore::HString const& parse_property_ident( void );
 	void parse_property_value( prop_values_t& );
 	void not_eof( void );
-	void save_variations( Player::player_t, Game::game_tree_t::const_node_t, yaal::hcore::HStreamInterface& );
-	void save_move( Player::player_t, Game::game_tree_t::const_node_t, yaal::hcore::HStreamInterface& );
+	void save_variations( Player::player_t, Game::game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
+	void save_move( Player::player_t, Game::game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
 	SGF( SGF const& );
 	SGF& operator = ( SGF const& );
 };
