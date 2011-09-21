@@ -328,7 +328,8 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 		for ( Game::preset_t::const_iterator it( _game._whitePreset.begin() ), end( _game._whitePreset.end() ); it != end; ++ it )
 			stream_ << '[' << it->coord() << ']';
 	}
-	save_variations( _game._firstToMove, _game._tree.get_root(), stream_, noNL_ );
+	if ( ! _game._tree.is_empty() )
+		save_variations( _game._firstToMove, _game._tree.get_root(), stream_, noNL_ );
 	stream_ << ( noNL_ ? ")" : ")\n" );
 	return;
 	M_EPILOG
