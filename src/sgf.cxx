@@ -356,7 +356,7 @@ void SGF::save_variations( Player::player_t from_, Game::game_tree_t::const_node
 		from_ = ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK );
 	}
 	if ( childCount > 1 ) /* We have variations. */ {
-		for ( Game::game_tree_t::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
+		for ( Game::game_tree_t::HNode::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
 			stream_ << ( noNL_ ? "(" : "\n(" );
 			save_move( from_, &*it, stream_, noNL_ );
 			save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_, noNL_ );
