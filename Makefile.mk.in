@@ -58,13 +58,13 @@ include $(DIR_ROOT)/_aux/mk/4_wrapper.mk
 include $(DIR_ROOT)/_aux/mk/5_flags.mk
 CXXFLAGS+= @EXTRA_CXXFLAGS@ @DEFS@ \
 					-I$(DIR_ROOT) -I$(DIR_BUILD) -I/usr/local/include
-LXXFLAGS+= -L. -L/usr/local/lib -shared @EXTRA_LXXFLAGS@
+LXXFLAGS+= -L. -L/usr/local/lib -shared @EXTRA_LXXFLAGS@ @YAAL_LXXFLAGS@
 
 include $(DIR_ROOT)/_aux/mk/7_func.mk
 
 $(eval $(call PREPARE_VARIABLES,$(LIB_NAME),$(LIB_SRC)))
 
-LIBS_sgf = -lc -lhcore$(LIB_INFIX)
+LIBS_sgf = -lc -lhcore$(LIB_INFIX) -ltools$(LIB_INFIX)
 
 -include $(DIR_ROOT)/local.mk
 

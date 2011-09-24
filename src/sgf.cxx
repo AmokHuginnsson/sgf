@@ -25,10 +25,15 @@ Copyright:
 */
 
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
 
 #include <yaal/hcore/hfile.hxx>
+#include <yaal/hcore/hcore.hxx>
+#include <yaal/tools/tools.hxx>
 M_VCSID( "$Id: "__ID__" $" )
 #include "sgf.hxx"
+#include "config.hxx"
 
 using namespace yaal;
 using namespace yaal::hcore;
@@ -423,5 +428,23 @@ void SGF::Game::clear( void ) {
 	M_EPILOG
 }
 
+void banner( void ) {
+	::printf( "\tSGF\n" );
+	return;
+}
+
+}
+
+extern "C"
+int sgf_sgf_main( int, char** ) {
+	static char const dynamicLinkerPath[]
+		__attribute__(( __section__(".interp") )) = __DYNAMIC_LINKER__;
+	if ( dynamicLinkerPath[ 0 ] ) {
+		yaal::hcore::banner( PACKAGE_NAME, PACKAGE_VERSION );
+		yaal::tools::banner();
+		sgf::banner();
+		::exit( 0 );
+	}
+	return ( 0 );
 }
 
