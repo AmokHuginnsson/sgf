@@ -59,6 +59,26 @@ SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	_currentMove( NULL ), _app( app_ ) {
 }
 
+void SGF::swap( SGF& sgf_ ) {
+	M_PROLOG
+	if ( &sgf_ != this ) {
+		using yaal::swap;
+		swap( _gameType, sgf_._gameType );
+		swap( _rawData, sgf_._rawData );
+		swap( _beg, sgf_._beg );
+		swap( _cur, sgf_._cur );
+		swap( _end, sgf_._end );
+		swap( _cache, sgf_._cache );
+		swap( _cachePropIdent, sgf_._cachePropIdent );
+		swap( _cachePropValue, sgf_._cachePropValue );
+		swap( _game, sgf_._game );
+		swap( _currentMove, sgf_._currentMove );
+		swap( _app, sgf_._app );
+	}
+	return;
+	M_EPILOG
+}
+
 void SGF::move( int col_, int row_ ) {
 	M_PROLOG
 	if ( ! _currentMove )
@@ -116,6 +136,22 @@ void SGF::load( HStreamInterface& stream_ ) {
 	clear();
 	while ( ( nRead = static_cast<int>( stream_.read( buffer.raw(), BUFFER_SIZE ) ) ) > 0 )
 		_rawData.append( buffer.raw(), nRead );
+	parse();
+	return;
+	M_EPILOG
+}
+
+void SGF::load( HString const& data_ ) {
+	M_PROLOG
+	clear();
+	_rawData = data_;
+	parse();
+	return;
+	M_EPILOG
+}
+
+void SGF::parse( void ) {
+	M_PROLOG
 	_beg = _rawData.begin();
 	_cur = _rawData.begin();
 	_end = _rawData.end();
@@ -382,6 +418,49 @@ void SGF::add_stone( Player::player_t player_, int col_, int row_ ) {
 SGF::Game::game_tree_t::node_t SGF::move( Game::game_tree_t::node_t node_, int col_, int row_ ) {
 	M_PROLOG
 	return ( _game.move( node_, col_, row_ ) );
+	M_EPILOG
+}
+
+SGF::Game::Game( void )
+	: _blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
+	_blackPreset(), _whitePreset(), _tree(), _firstToMove( Player::UNSET ),
+	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
+	_result( 0 ), _place(), _comment()
+	{ }
+
+void SGF::Game::swap( Game& game_ ) {
+	M_PROLOG
+	if ( &game_ != this ) {
+		using yaal::swap;
+		swap( _blackName, game_._blackName );
+		swap( _whiteName, game_._whiteName );
+		swap( _blackRank, game_._blackRank );
+		swap( _whiteRank, game_._whiteRank );
+		swap( _blackPreset, game_._blackPreset );
+		swap( _whitePreset, game_._whitePreset );
+		swap( _tree, game_._tree );
+		swap( _firstToMove, game_._firstToMove );
+		swap( _gobanSize, game_._gobanSize );
+		swap( _time, game_._time );
+		swap( _handicap, game_._handicap );
+		swap( _komi, game_._komi );
+		swap( _result, game_._result );
+		swap( _place, game_._place );
+		swap( _comment, game_._comment );
+	}
+	return;
+	M_EPILOG
+}
+
+void SGF::Game::Move::swap( Move& move_ ) {
+	M_PROLOG
+	if ( &move_ != this ) {
+		using yaal::swap;
+		using yaal::swap_ranges;
+		swap_ranges( _coord, _coord + countof ( _coord ), move_._coord );
+		swap( _comment, move_._comment );
+	}
+	return;
 	M_EPILOG
 }
 

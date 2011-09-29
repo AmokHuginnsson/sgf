@@ -91,6 +91,7 @@ public:
 			Move( yaal::hcore::HString const& coord_ )
 				: _coord(), _comment()
 				{ coord( coord_ ); }
+			void swap( Move& );
 			char const* coord( void ) const
 				{ return ( _coord ); }
 			void coord( yaal::hcore::HString const& coord_ ) {
@@ -131,12 +132,8 @@ public:
 		int _result;
 		yaal::hcore::HString _place;
 		yaal::hcore::HString _comment;
-		Game( void )
-			: _blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
-			_blackPreset(), _whitePreset(), _tree(), _firstToMove( Player::UNSET ),
-			_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
-			_result( 0 ), _place(), _comment()
-			{ }
+		Game( void );
+		void swap( Game& );
 		void add_stone( Player::player_t, int, int );
 		void add_stone( Player::player_t, Move const& );
 		game_tree_t::node_t move( game_tree_t::node_t, int, int );
@@ -159,7 +156,9 @@ private:
 	yaal::hcore::HString _app;
 public:
 	SGF( GAME_TYPE::game_type_t, yaal::hcore::HString const& = "libsgf" );
+	void swap( SGF& );
 	void load( yaal::hcore::HStreamInterface& );
+	void load( yaal::hcore::HString const& );
 	void save( yaal::hcore::HStreamInterface&, bool = false );
 	void move( int, int );
 	void clear( void );
@@ -168,6 +167,7 @@ public:
 	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
 	void add_comment( yaal::hcore::HString const& );
 private:
+	void parse( void );
 	Game::game_tree_t::node_t move( Game::game_tree_t::node_t, int, int );
 	void parse_game_tree( void );
 	void parse_sequence( void );
@@ -183,6 +183,15 @@ private:
 };
 
 typedef yaal::hcore::HExceptionT<SGF> SGFException;
+
+inline void swap( SGF& a, SGF& b )
+	{ a.swap( b ); }
+
+inline void swap( SGF::Game& a, SGF::Game& b )
+	{ a.swap( b ); }
+
+inline void swap( SGF::Game::Move& a, SGF::Game::Move& b )
+	{ a.swap( b ); }
 
 }
 
