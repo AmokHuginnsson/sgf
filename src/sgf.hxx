@@ -193,6 +193,8 @@ inline void swap( SGF::Game& a, SGF::Game& b )
 inline void swap( SGF::Game::Move& a, SGF::Game::Move& b )
 	{ a.swap( b ); }
 
+void banner( void );
+
 }
 
 #endif /* #ifndef SGF_HXX_INCLUDED */

@@ -515,6 +515,8 @@ void banner( void ) {
 }
 
 extern "C"
+int sgf_sgf_main( int, char** );
+extern "C"
 int sgf_sgf_main( int, char** ) {
 	static char const dynamicLinkerPath[]
 		__attribute__(( __section__(".interp") )) = __DYNAMIC_LINKER__;
