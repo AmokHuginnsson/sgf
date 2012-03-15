@@ -135,7 +135,7 @@ void SGF::load( HStreamInterface& stream_ ) {
 	int nRead( 0 );
 	clear();
 	while ( ( nRead = static_cast<int>( stream_.read( buffer.raw(), BUFFER_SIZE ) ) ) > 0 )
-		_rawData.append( buffer.raw(), nRead );
+		_rawData.append( buffer.get<char>(), nRead );
 	parse();
 	return;
 	M_EPILOG
