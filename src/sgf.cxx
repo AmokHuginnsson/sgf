@@ -163,7 +163,7 @@ void SGF::parse( void ) {
 			parse_game_tree();
 	} catch ( SGFException const& e ) {
 		if ( _cur != _end )
-			cerr << "Failed at byte: `" << *_cur << "'" << endl;
+			cerr << "Failed at byte: " << ( _cur - _beg ) << " (`" << *_cur << "')" << endl;
 		throw;
 	}
 	return;
