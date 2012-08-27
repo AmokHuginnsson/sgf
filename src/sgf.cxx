@@ -83,7 +83,7 @@ void SGF::move( int col_, int row_ ) {
 	M_PROLOG
 	if ( ! _currentMove )
 		_currentMove = _game._tree.create_new_root();
-	_currentMove = &*_currentMove->add_node( Move( col_, row_ ) );
+	_currentMove = &*_currentMove->add_node( Game::node_ptr_t( new Move( col_, row_ ) ) );
 	return;
 	M_EPILOG
 }
@@ -298,14 +298,14 @@ void SGF::parse_property( void ) {
 	} else if ( _cachePropIdent == "B" ) {
 		if ( _game._firstToMove == Player::UNSET )
 			_game._firstToMove = Player::BLACK;
-		(**_currentMove).coord( singleValue );
+		static_cast<Move*>( (**_currentMove).raw() )->coord( singleValue );
 	} else if ( _cachePropIdent == "W" ) {
 		if ( _game._firstToMove == Player::UNSET )
 			_game._firstToMove = Player::WHITE;
-		(**_currentMove).coord( singleValue );
+		static_cast<Move*>( (**_currentMove).raw() )->coord( singleValue );
 	} else if ( _cachePropIdent == "C" ) {
 		if ( _game._firstToMove != Player::UNSET )
-			(**_currentMove)._comment = singleValue;
+			(**_currentMove)->_comment = singleValue;
 		else
 			_game._comment += singleValue;
 	} else
@@ -378,9 +378,9 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 
 void SGF::save_move( Player::player_t of_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_, bool ) {
 	M_PROLOG
-	stream_ << ';' << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (**node_).coord() << ']';
-	if ( ! (**node_)._comment.is_empty() ) {
-		_cache = (**node_)._comment;
+	stream_ << ';' << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << static_cast<Move const*>( (**node_).raw() )->coord() << ']';
+	if ( ! (**node_)->_comment.is_empty() ) {
+		_cache = (**node_)->_comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
 		stream_ << "C[" << _cache << "]";
 	}
@@ -483,7 +483,7 @@ void SGF::Game::add_stone( Player::player_t player_, Move const& move_ ) {
 
 SGF::Game::game_tree_t::node_t SGF::Game::move( game_tree_t::node_t node_, int col_, int row_ ) {
 	M_PROLOG
-	return ( &*node_->add_node( Move( col_, row_ ) ) );
+	return ( &*node_->add_node( Game::node_ptr_t( new Move( col_, row_ ) ) ) );
 	M_EPILOG
 }
 

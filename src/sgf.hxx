@@ -29,6 +29,7 @@ Copyright:
 
 #include <yaal/hcore/hstring.hxx>
 #include <yaal/hcore/harray.hxx>
+#include <yaal/hcore/hstaticarray.hxx>
 #include <yaal/hcore/htree.hxx>
 #include <yaal/hcore/hstreaminterface.hxx>
 
@@ -67,29 +68,35 @@ public:
 		static char const ESCAPE = '\\';
 	};
 	struct Game {
-		struct Move {
-			struct Player {
-				typedef enum {
-					BLACK,
-					WHITE,
-					UNSET
-				} player_t;
-			};
-			char _coord[3];
+		struct Player {
+			typedef enum {
+				BLACK,
+				WHITE,
+				UNSET
+			} player_t;
+		};
+		struct Node {
+			Node( void )
+				: _comment()
+				{}
+			virtual ~Node( void ) {}
 			yaal::hcore::HString _comment;
+		};
+		struct Move : public Node {
+			char _coord[3];
 			Move( void )
-				: _coord(), _comment()
-				{ }
+				: Node(), _coord()
+				{}
 			Move( int col_, int row_ )
-				: _coord(), _comment() {
+				: Node(), _coord() {
 				_coord[0] = static_cast<char>( col_ + 'a' );
 				_coord[1] = static_cast<char>( row_ + 'a' );
 			}
 			Move( char const* const coord_ )
-				: _coord(), _comment()
+				: Node(), _coord()
 				{ coord( coord_ ); }
 			Move( yaal::hcore::HString const& coord_ )
-				: _coord(), _comment()
+				: Node(), _coord()
 				{ coord( coord_ ); }
 			void swap( Move& );
 			char const* coord( void ) const
@@ -112,11 +119,20 @@ public:
 				return ( _coord[1] - 'a' );
 			}
 		};
-		typedef Move::Player Player;
+		struct Set : public Node {
+			typedef yaal::hcore::HStaticArray<char, 3> coord_t;
+			typedef yaal::hcore::HArray<coord_t> coords_t;
+			coords_t _remove;
+			coords_t _add;
+			Set( void )
+				: Node(), _remove(), _add()
+				{}
+		};
+		typedef yaal::hcore::HPointer<Node> node_ptr_t;
 		static int const RESIGN = 0xffff;
 		static int const TIME = 0x7fff;
 		typedef yaal::hcore::HArray<Move> preset_t;
-		typedef yaal::hcore::HTree<Move> game_tree_t;
+		typedef yaal::hcore::HTree<node_ptr_t> game_tree_t;
 		yaal::hcore::HString _blackName;
 		yaal::hcore::HString _whiteName;
 		yaal::hcore::HString _blackRank;
@@ -140,7 +156,7 @@ public:
 		void clear( void );
 	};
 	typedef Game::Move Move;
-	typedef Game::Move::Player Player;
+	typedef Game::Player Player;
 private:
 	GAME_TYPE::game_type_t _gameType;
 	yaal::hcore::HString _rawData;
