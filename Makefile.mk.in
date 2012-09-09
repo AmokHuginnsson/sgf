@@ -61,9 +61,9 @@ include $(DIR_ROOT)/_aux/mk/2_term.mk
 include $(DIR_ROOT)/_aux/mk/3_suffix.mk
 include $(DIR_ROOT)/_aux/mk/4_wrapper.mk
 include $(DIR_ROOT)/_aux/mk/5_flags.mk
-CXXFLAGS+= @EXTRA_CXXFLAGS@ @DEFS@ \
+override CXXFLAGS+= @EXTRA_CXXFLAGS@ @DEFS@ \
 					-I$(DIR_ROOT) -I$(DIR_BUILD) -I/usr/local/include
-LXXFLAGS+= -L. -L/usr/local/lib -shared @EXTRA_LXXFLAGS@ @YAAL_LXXFLAGS@
+override LXXFLAGS+= -L. -L/usr/local/lib -shared @EXTRA_LXXFLAGS@ @YAAL_LXXFLAGS@
 
 include $(DIR_ROOT)/_aux/mk/7_func.mk
 
