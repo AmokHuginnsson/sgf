@@ -83,7 +83,7 @@ void SGF::move( int col_, int row_ ) {
 	M_PROLOG
 	if ( ! _currentMove )
 		_currentMove = _game._tree.create_new_root();
-	_currentMove = &*_currentMove->add_node( Game::node_ptr_t( new Move( col_, row_ ) ) );
+	_currentMove = &*_currentMove->add_node( Move( col_, row_ ) );
 	return;
 	M_EPILOG
 }
@@ -291,21 +291,21 @@ void SGF::parse_property( void ) {
 			_game._result = -_game._result;
 	} else if ( _cachePropIdent == "AB" ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
-			_game.add_stone( Player::BLACK, Move( *it ) );
+			_game.add_position( Position::BLACK, Move( *it ) );
 	} else if ( _cachePropIdent == "AW" ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
-			_game.add_stone( Player::WHITE, Move( *it ) );
+			_game.add_position( Position::WHITE, Move( *it ) );
 	} else if ( _cachePropIdent == "B" ) {
 		if ( _game._firstToMove == Player::UNSET )
 			_game._firstToMove = Player::BLACK;
-		static_cast<Move*>( (**_currentMove).raw() )->coord( singleValue );
+		(*_currentMove)->coord( singleValue );
 	} else if ( _cachePropIdent == "W" ) {
 		if ( _game._firstToMove == Player::UNSET )
 			_game._firstToMove = Player::WHITE;
-		static_cast<Move*>( (**_currentMove).raw() )->coord( singleValue );
+		(*_currentMove)->coord( singleValue );
 	} else if ( _cachePropIdent == "C" ) {
 		if ( _game._firstToMove != Player::UNSET )
-			(**_currentMove)->_comment = singleValue;
+			(*_currentMove)->_comment = singleValue;
 		else
 			_game._comment += singleValue;
 	} else
@@ -378,9 +378,9 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 
 void SGF::save_move( Player::player_t of_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_, bool ) {
 	M_PROLOG
-	stream_ << ';' << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << static_cast<Move const*>( (**node_).raw() )->coord() << ']';
-	if ( ! (**node_)->_comment.is_empty() ) {
-		_cache = (**node_)->_comment;
+	stream_ << ';' << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord() << ']';
+	if ( ! (*node_)->_comment.is_empty() ) {
+		_cache = (*node_)->_comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
 		stream_ << "C[" << _cache << "]";
 	}
@@ -408,9 +408,9 @@ void SGF::save_variations( Player::player_t from_, Game::game_tree_t::const_node
 	M_EPILOG
 }
 
-void SGF::add_stone( Player::player_t player_, int col_, int row_ ) {
+void SGF::add_position( Position::position_t position_, int col_, int row_ ) {
 	M_PROLOG
-	_game.add_stone( player_, col_, row_ );
+	_game.add_position( position_, col_, row_ );
 	return;
 	M_EPILOG
 }
@@ -423,6 +423,7 @@ SGF::Game::game_tree_t::node_t SGF::move( Game::game_tree_t::node_t node_, int c
 
 SGF::Game::Game( void )
 	: _blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
+	_setups(),
 	_blackPreset(), _whitePreset(), _tree(), _firstToMove( Player::UNSET ),
 	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
 	_result( 0 ), _place(), _comment()
@@ -456,24 +457,24 @@ void SGF::Game::Move::swap( Move& move_ ) {
 	M_PROLOG
 	if ( &move_ != this ) {
 		using yaal::swap;
-		using yaal::swap_ranges;
-		swap_ranges( _coord, _coord + countof ( _coord ), move_._coord );
+		swap( _coord, move_._coord );
 		swap( _comment, move_._comment );
+		swap( _setup, move_._setup );
 	}
 	return;
 	M_EPILOG
 }
 
-void SGF::Game::add_stone( Player::player_t player_, int col_, int row_ ) {
+void SGF::Game::add_position( Position::position_t position_, int col_, int row_ ) {
 	M_PROLOG
-	add_stone( player_, Move( col_, row_ ) );
+	add_position( position_, Move( col_, row_ ) );
 	return;
 	M_EPILOG
 }
 
-void SGF::Game::add_stone( Player::player_t player_, Move const& move_ ) {
+void SGF::Game::add_position( Position::position_t position_, Move const& move_ ) {
 	M_PROLOG
-	if ( player_ == Player::BLACK )
+	if ( position_ == Position::BLACK )
 		_blackPreset.push_back( move_ );
 	else
 		_whitePreset.push_back( move_ );
@@ -483,7 +484,7 @@ void SGF::Game::add_stone( Player::player_t player_, Move const& move_ ) {
 
 SGF::Game::game_tree_t::node_t SGF::Game::move( game_tree_t::node_t node_, int col_, int row_ ) {
 	M_PROLOG
-	return ( &*node_->add_node( Game::node_ptr_t( new Move( col_, row_ ) ) ) );
+	return ( &*node_->add_node( Move( col_, row_ ) ) );
 	M_EPILOG
 }
 

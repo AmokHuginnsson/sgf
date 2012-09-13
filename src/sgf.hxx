@@ -75,32 +75,56 @@ public:
 				UNSET
 			} player_t;
 		};
-		struct Node {
-			Node( void )
-				: _comment()
-				{}
-			virtual ~Node( void ) {}
-			yaal::hcore::HString _comment;
+		struct Position {
+			typedef enum {
+				REMOVE = 0,
+				BLACK = 1,
+				WHITE = 2,
+				TRIANGLE = 3,
+				SQUARE = 4,
+				CIRCLE = 5
+			} position_t;
 		};
-		struct Move : public Node {
-			char _coord[3];
+		typedef yaal::hcore::HStaticArray<char, 3> coord_t;
+		struct Setup {
+			typedef yaal::hcore::HList<coord_t> coords_t;
+			typedef yaal::hcore::HMap<Position::position_t, coords_t> setup_t;
+			setup_t _data;
+			Setup( void )
+				: _data()
+				{}
+		};
+		struct Move {
+			coord_t _coord;
+			yaal::hcore::HString _comment;
+			Setup* _setup;
 			Move( void )
-				: Node(), _coord()
+				: _coord(), _comment(), _setup( NULL )
 				{}
 			Move( int col_, int row_ )
-				: Node(), _coord() {
+				: _coord(), _comment(), _setup( NULL ) {
 				_coord[0] = static_cast<char>( col_ + 'a' );
 				_coord[1] = static_cast<char>( row_ + 'a' );
 			}
 			Move( char const* const coord_ )
-				: Node(), _coord()
+				: _coord(), _comment(), _setup( NULL )
 				{ coord( coord_ ); }
 			Move( yaal::hcore::HString const& coord_ )
-				: Node(), _coord()
+				: _coord(), _comment(), _setup( NULL )
 				{ coord( coord_ ); }
+			Move( Move const& m_ )
+				: _coord( m_._coord ), _comment( m_._comment ), _setup( m_._setup )
+				{ }
+			Move& operator = ( Move const& m_ ) {
+				if ( &m_ != this ) {
+					Move tmp( m_ );
+					swap( tmp );
+				}
+				return ( *this );
+			}
 			void swap( Move& );
 			char const* coord( void ) const
-				{ return ( _coord ); }
+				{ return ( _coord.data() ); }
 			void coord( yaal::hcore::HString const& coord_ ) {
 				if ( coord_.get_length() >= 2 ) {
 					_coord[0] = coord_[0];
@@ -119,24 +143,16 @@ public:
 				return ( _coord[1] - 'a' );
 			}
 		};
-		struct Set : public Node {
-			typedef yaal::hcore::HStaticArray<char, 3> coord_t;
-			typedef yaal::hcore::HArray<coord_t> coords_t;
-			coords_t _remove;
-			coords_t _add;
-			Set( void )
-				: Node(), _remove(), _add()
-				{}
-		};
-		typedef yaal::hcore::HPointer<Node> node_ptr_t;
 		static int const RESIGN = 0xffff;
 		static int const TIME = 0x7fff;
 		typedef yaal::hcore::HArray<Move> preset_t;
-		typedef yaal::hcore::HTree<node_ptr_t> game_tree_t;
+		typedef yaal::hcore::HArray<Setup> setups_t;
+		typedef yaal::hcore::HTree<Move> game_tree_t;
 		yaal::hcore::HString _blackName;
 		yaal::hcore::HString _whiteName;
 		yaal::hcore::HString _blackRank;
 		yaal::hcore::HString _whiteRank;
+		setups_t _setups;
 		preset_t _blackPreset;
 		preset_t _whitePreset;
 		game_tree_t _tree;
@@ -150,13 +166,14 @@ public:
 		yaal::hcore::HString _comment;
 		Game( void );
 		void swap( Game& );
-		void add_stone( Player::player_t, int, int );
-		void add_stone( Player::player_t, Move const& );
+		void add_position( Position::position_t, int, int );
+		void add_position( Position::position_t, Move const& );
 		game_tree_t::node_t move( game_tree_t::node_t, int, int );
 		void clear( void );
 	};
 	typedef Game::Move Move;
 	typedef Game::Player Player;
+	typedef Game::Position Position;
 private:
 	GAME_TYPE::game_type_t _gameType;
 	yaal::hcore::HString _rawData;
@@ -178,7 +195,7 @@ public:
 	void save( yaal::hcore::HStreamInterface&, bool = false );
 	void move( int, int );
 	void clear( void );
-	void add_stone( Player::player_t, int, int );
+	void add_position( Position::position_t, int, int );
 	void set_player( Player::player_t, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
 	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
 	void add_comment( yaal::hcore::HString const& );
