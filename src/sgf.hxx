@@ -29,6 +29,7 @@ Copyright:
 
 #include <yaal/hcore/hstring.hxx>
 #include <yaal/hcore/harray.hxx>
+#include <yaal/hcore/hmap.hxx>
 #include <yaal/hcore/hstaticarray.hxx>
 #include <yaal/hcore/htree.hxx>
 #include <yaal/hcore/hstreaminterface.hxx>
