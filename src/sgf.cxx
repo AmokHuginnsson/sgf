@@ -461,7 +461,7 @@ void SGF::add_position( Position::position_t position_, Coord const& coord_ ) {
 		_setups.push_back( Setup() );
 		_currentMove = &*_currentMove->add_node( Move( &_setups.back() ) );
 	}
-	(*_currentMove)->_setup->_data[position_].push_back( coord_ );
+	(*_currentMove)->_setup->add_position( position_, coord_ );
 	return;
 	M_EPILOG
 }
@@ -469,6 +469,29 @@ void SGF::add_position( Position::position_t position_, Coord const& coord_ ) {
 SGF::game_tree_t::node_t SGF::move( game_tree_t::node_t node_, Coord const& coord_ ) {
 	M_PROLOG
 	return ( &*node_->add_node( Move( coord_ ) ) );
+	M_EPILOG
+}
+
+void SGF::Setup::add_position( Position::position_t position_, Coord const& coord_ ) {
+	M_PROLOG
+	if ( position_ == Position::REMOVE ) {
+		for ( Setup::setup_t::iterator it( _data.begin() ), end( _data.end() ); it != end; ++ it ) {
+			if ( it->first == Position::REMOVE )
+				continue;
+			it->second.remove( coord_ );
+		}
+	} else {
+		for ( Setup::setup_t::iterator it( _data.begin() ), end( _data.end() ); it != end; ++ it ) {
+			if ( it->first == Position::REMOVE )
+				continue;
+			if ( find( it->second.begin(), it->second.end(), coord_ ) != it->second.end() )
+				throw SGFException( "Duplicated coordinate in setup." );
+		}
+	}
+	coords_t& c( _data[position_] );
+	if ( ( position_ != Position::REMOVE ) || ( find( c.begin(), c.end(), coord_ ) == c.end() ) )
+		c.push_back( coord_ );
+	return;
 	M_EPILOG
 }
 

@@ -122,6 +122,12 @@ public:
 				swap( *reinterpret_cast<yaal::i16_t*>( _data ), *reinterpret_cast<yaal::i16_t*>( c_._data ) );
 			}
 		}
+		bool operator == ( Coord const& c_ ) {
+			return ( ( _data[0] == c_._data[0] ) && ( _data[1] == c_._data[1] ) );
+		}
+		bool operator != ( Coord const& c_ ) {
+			return ( ( _data[0] != c_._data[0] ) || ( _data[1] != c_._data[1] ) );
+		}
 	};
 	struct Setup {
 		typedef yaal::hcore::HList<Coord> coords_t;
@@ -136,6 +142,7 @@ public:
 				swap( _data, s_._data );
 			}
 		}
+		void add_position( Position::position_t, Coord const& );
 	};
 	struct Move {
 		Coord _coord;
