@@ -55,8 +55,13 @@ char const _errMsg_[][50] = {
 
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	: _gameType( gameType_ ), _rawData(), _beg( NULL ), _cur( NULL ), _end( NULL ),
-	_cache(), _cachePropIdent(), _cachePropValue(), _game(),
-	_currentMove( NULL ), _app( app_ ) {
+	_cache(), _cachePropIdent(), _cachePropValue(),
+	_currentMove( NULL ), _app( app_ ),
+	_blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
+	_setups(),
+	_blackPreset(), _whitePreset(), _tree(), _firstToMove( Player::UNSET ),
+	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
+	_result( 0 ), _place(), _comment() {
 }
 
 void SGF::swap( SGF& sgf_ ) {
@@ -71,19 +76,33 @@ void SGF::swap( SGF& sgf_ ) {
 		swap( _cache, sgf_._cache );
 		swap( _cachePropIdent, sgf_._cachePropIdent );
 		swap( _cachePropValue, sgf_._cachePropValue );
-		swap( _game, sgf_._game );
 		swap( _currentMove, sgf_._currentMove );
 		swap( _app, sgf_._app );
+		swap( _blackName, sgf_._blackName );
+		swap( _whiteName, sgf_._whiteName );
+		swap( _blackRank, sgf_._blackRank );
+		swap( _whiteRank, sgf_._whiteRank );
+		swap( _blackPreset, sgf_._blackPreset );
+		swap( _whitePreset, sgf_._whitePreset );
+		swap( _tree, sgf_._tree );
+		swap( _firstToMove, sgf_._firstToMove );
+		swap( _gobanSize, sgf_._gobanSize );
+		swap( _time, sgf_._time );
+		swap( _handicap, sgf_._handicap );
+		swap( _komi, sgf_._komi );
+		swap( _result, sgf_._result );
+		swap( _place, sgf_._place );
+		swap( _comment, sgf_._comment );
 	}
 	return;
 	M_EPILOG
 }
 
-void SGF::move( int col_, int row_ ) {
+void SGF::move( Coord const& coord_ ) {
 	M_PROLOG
 	if ( ! _currentMove )
-		_currentMove = _game._tree.create_new_root();
-	_currentMove = &*_currentMove->add_node( Move( col_, row_ ) );
+		_currentMove = _tree.create_new_root();
+	_currentMove = &*_currentMove->add_node( Move( coord_ ) );
 	return;
 	M_EPILOG
 }
@@ -91,11 +110,11 @@ void SGF::move( int col_, int row_ ) {
 void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name_, yaal::hcore::HString const& rank_ ) {
 	M_PROLOG
 	if ( player_ == Player::BLACK ) {
-		_game._blackName = name_;
-		_game._blackRank = rank_;
+		_blackName = name_;
+		_blackRank = rank_;
 	} else {
-		_game._whiteName = name_;
-		_game._whiteRank = rank_;
+		_whiteName = name_;
+		_whiteRank = rank_;
 	}
 	return;
 	M_EPILOG
@@ -103,19 +122,19 @@ void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name
 
 void SGF::set_info( Player::player_t player_, int gobanSize_, int handicap_, double komi_, int time_, yaal::hcore::HString const& place_ ) {
 	M_PROLOG
-	_game._firstToMove = player_;
-	_game._gobanSize = gobanSize_;
-	_game._handicap = handicap_;
-	_game._komi = komi_;
-	_game._time = time_;
-	_game._place = place_;
+	_firstToMove = player_;
+	_gobanSize = gobanSize_;
+	_handicap = handicap_;
+	_komi = komi_;
+	_time = time_;
+	_place = place_;
 	return;
 	M_EPILOG
 }
 
 void SGF::add_comment( yaal::hcore::HString const& comment_ ) {
 	M_PROLOG
-	_game._comment += comment_;
+	_comment += comment_;
 	return;
 	M_EPILOG
 }
@@ -175,7 +194,20 @@ void SGF::clear( void ) {
 	_beg = _cur = _end = NULL;
 	_currentMove = NULL;
 	_rawData.clear();
-	_game.clear();
+	_blackPreset.clear();
+	_whitePreset.clear();
+	_tree.clear();
+	_firstToMove = Player::UNSET;
+	_blackName.clear();
+	_blackRank.clear();
+	_whiteName.clear();
+	_whiteRank.clear();
+	_komi = 5.5;
+	_handicap = 0;
+	_gobanSize = 19;
+	_result = 0;
+	_place.clear();
+	_comment.clear();
 	return;
 	M_EPILOG
 }
@@ -194,9 +226,9 @@ void SGF::parse_game_tree( void ) {
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
 	if ( ! _currentMove )
-		_currentMove = _game._tree.create_new_root();
+		_currentMove = _tree.create_new_root();
 	parse_sequence();
-	Game::game_tree_t::node_t preVariationMove( _currentMove );
+	game_tree_t::node_t preVariationMove( _currentMove );
 	while ( ( _cur != _end ) && ( *_cur != TERM::GT_CLOSE ) ) {
 		_currentMove = &*preVariationMove->add_node();
 		parse_game_tree();
@@ -259,55 +291,55 @@ void SGF::parse_property( void ) {
 		if ( ( ff < 1 ) || ( ff > 4 ) )
 			throw SGFException( _errMsg_[ERROR::BAD_FILE_FORMAT], static_cast<int>( _cur - _beg ) );
 	} else if ( _cachePropIdent == "PB" )
-		_game._blackName = singleValue;
+		_blackName = singleValue;
 	else if ( _cachePropIdent == "PW" )
-		_game._whiteName = singleValue;
+		_whiteName = singleValue;
 	else if ( _cachePropIdent == "BR" )
-		_game._blackRank = singleValue;
+		_blackRank = singleValue;
 	else if ( _cachePropIdent == "WR" )
-		_game._whiteRank = singleValue;
+		_whiteRank = singleValue;
 	else if ( _cachePropIdent == "KM" )
-		_game._komi = lexical_cast<double>( singleValue );
+		_komi = lexical_cast<double>( singleValue );
 	else if ( _cachePropIdent == "HA" )
-		_game._handicap = lexical_cast<int>( singleValue );
+		_handicap = lexical_cast<int>( singleValue );
 	else if ( _cachePropIdent == "SZ" )
-		_game._gobanSize = lexical_cast<int>( singleValue );
+		_gobanSize = lexical_cast<int>( singleValue );
 	else if ( _cachePropIdent == "TM" )
-		_game._time = lexical_cast<int>( singleValue );
+		_time = lexical_cast<int>( singleValue );
 	else if ( _cachePropIdent == "PC" )
-		_game._place = singleValue;
+		_place = singleValue;
 	else if ( _cachePropIdent == "RE" ) {
 		if ( isdigit( singleValue[2] ) )
-			_game._result = lexical_cast<int>( singleValue.raw() + 2 );
+			_result = lexical_cast<int>( singleValue.raw() + 2 );
 		else {
 			char r( static_cast<char>( toupper( singleValue[2] ) ) );
 			if ( r == 'R' )
-				_game._result = Game::RESIGN;
+				_result = RESIGN;
 			else if ( r == 'T' )
-				_game._result = Game::TIME;
+				_result = TIME;
 		}
 		char player( static_cast<char>( toupper( singleValue[0] ) ) );
 		if ( player == 'W' )
-			_game._result = -_game._result;
+			_result = _result;
 	} else if ( _cachePropIdent == "AB" ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
-			_game.add_position( Position::BLACK, Move( *it ) );
+			add_position( Position::BLACK, Coord( *it ) );
 	} else if ( _cachePropIdent == "AW" ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
-			_game.add_position( Position::WHITE, Move( *it ) );
+			add_position( Position::WHITE, Coord( *it ) );
 	} else if ( _cachePropIdent == "B" ) {
-		if ( _game._firstToMove == Player::UNSET )
-			_game._firstToMove = Player::BLACK;
-		(*_currentMove)->coord( singleValue );
+		if ( _firstToMove == Player::UNSET )
+			_firstToMove = Player::BLACK;
+		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "W" ) {
-		if ( _game._firstToMove == Player::UNSET )
-			_game._firstToMove = Player::WHITE;
-		(*_currentMove)->coord( singleValue );
+		if ( _firstToMove == Player::UNSET )
+			_firstToMove = Player::WHITE;
+		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "C" ) {
-		if ( _game._firstToMove != Player::UNSET )
+		if ( _firstToMove != Player::UNSET )
 			(*_currentMove)->_comment = singleValue;
 		else
-			_game._comment += singleValue;
+			_comment += singleValue;
 	} else
 		clog << "property: `" << _cachePropIdent << "' = `" << singleValue << "'" << endl;
 	return;
@@ -351,32 +383,32 @@ void SGF::parse_property_value( prop_values_t& values_ ) {
 void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << ( noNL_ ? "]" : "]\n" )
-		<< "SZ[" << _game._gobanSize << "]KM[" << setw( 1 ) << _game._komi << "]TM[" << _game._time << ( noNL_ ? "]" : "]\n" )
-		<< "PB[" << _game._blackName << "]PW[" << _game._whiteName << ( noNL_ ? "]" : "]\n" )
-		<< "BR[" << _game._blackRank << "]WR[" << _game._whiteRank << ( noNL_ ? "]" : "]\n" );
-	if ( ! _game._comment.is_empty() ) {
-		_cache = _game._comment;
+		<< "SZ[" << _gobanSize << "]KM[" << setw( 1 ) << _komi << "]TM[" << _time << ( noNL_ ? "]" : "]\n" )
+		<< "PB[" << _blackName << "]PW[" << _whiteName << ( noNL_ ? "]" : "]\n" )
+		<< "BR[" << _blackRank << "]WR[" << _whiteRank << ( noNL_ ? "]" : "]\n" );
+	if ( ! _comment.is_empty() ) {
+		_cache = _comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
 		stream_ << "C[" << _cache << "]";
 	}
-	if ( ! _game._blackPreset.empty() ) {
+	if ( ! _blackPreset.empty() ) {
 		stream_ << "AB";
-		for ( Game::preset_t::const_iterator it( _game._blackPreset.begin() ), end( _game._blackPreset.end() ); it != end; ++ it )
+		for ( preset_t::const_iterator it( _blackPreset.begin() ), end( _blackPreset.end() ); it != end; ++ it )
 			stream_ << '[' << it->coord() << ']';
 	}
-	if ( ! _game._whitePreset.empty() ) {
+	if ( ! _whitePreset.empty() ) {
 		stream_ << "AW";
-		for ( Game::preset_t::const_iterator it( _game._whitePreset.begin() ), end( _game._whitePreset.end() ); it != end; ++ it )
+		for ( preset_t::const_iterator it( _whitePreset.begin() ), end( _whitePreset.end() ); it != end; ++ it )
 			stream_ << '[' << it->coord() << ']';
 	}
-	if ( ! _game._tree.is_empty() )
-		save_variations( _game._firstToMove, _game._tree.get_root(), stream_, noNL_ );
+	if ( ! _tree.is_empty() )
+		save_variations( _firstToMove, _tree.get_root(), stream_, noNL_ );
 	stream_ << ( noNL_ ? ")" : ")\n" );
 	return;
 	M_EPILOG
 }
 
-void SGF::save_move( Player::player_t of_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_, bool ) {
+void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool ) {
 	M_PROLOG
 	stream_ << ';' << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord() << ']';
 	if ( ! (*node_)->_comment.is_empty() ) {
@@ -388,7 +420,7 @@ void SGF::save_move( Player::player_t of_, Game::game_tree_t::const_node_t node_
 	M_EPILOG
 }
 
-void SGF::save_variations( Player::player_t from_, Game::game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
+void SGF::save_variations( Player::player_t from_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	int childCount( 0 );
 	while ( ( childCount = static_cast<int>( node_->child_count() ) ) == 1 ) {
@@ -397,7 +429,7 @@ void SGF::save_variations( Player::player_t from_, Game::game_tree_t::const_node
 		from_ = ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK );
 	}
 	if ( childCount > 1 ) /* We have variations. */ {
-		for ( Game::game_tree_t::HNode::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
+		for ( game_tree_t::HNode::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
 			stream_ << ( noNL_ ? "(" : "\n(" );
 			save_move( from_, &*it, stream_, noNL_ );
 			save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_, noNL_ );
@@ -408,52 +440,7 @@ void SGF::save_variations( Player::player_t from_, Game::game_tree_t::const_node
 	M_EPILOG
 }
 
-void SGF::add_position( Position::position_t position_, int col_, int row_ ) {
-	M_PROLOG
-	_game.add_position( position_, col_, row_ );
-	return;
-	M_EPILOG
-}
-
-SGF::Game::game_tree_t::node_t SGF::move( Game::game_tree_t::node_t node_, int col_, int row_ ) {
-	M_PROLOG
-	return ( _game.move( node_, col_, row_ ) );
-	M_EPILOG
-}
-
-SGF::Game::Game( void )
-	: _blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
-	_setups(),
-	_blackPreset(), _whitePreset(), _tree(), _firstToMove( Player::UNSET ),
-	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
-	_result( 0 ), _place(), _comment()
-	{ }
-
-void SGF::Game::swap( Game& game_ ) {
-	M_PROLOG
-	if ( &game_ != this ) {
-		using yaal::swap;
-		swap( _blackName, game_._blackName );
-		swap( _whiteName, game_._whiteName );
-		swap( _blackRank, game_._blackRank );
-		swap( _whiteRank, game_._whiteRank );
-		swap( _blackPreset, game_._blackPreset );
-		swap( _whitePreset, game_._whitePreset );
-		swap( _tree, game_._tree );
-		swap( _firstToMove, game_._firstToMove );
-		swap( _gobanSize, game_._gobanSize );
-		swap( _time, game_._time );
-		swap( _handicap, game_._handicap );
-		swap( _komi, game_._komi );
-		swap( _result, game_._result );
-		swap( _place, game_._place );
-		swap( _comment, game_._comment );
-	}
-	return;
-	M_EPILOG
-}
-
-void SGF::Game::Move::swap( Move& move_ ) {
+void SGF::Move::swap( Move& move_ ) {
 	M_PROLOG
 	if ( &move_ != this ) {
 		using yaal::swap;
@@ -465,46 +452,23 @@ void SGF::Game::Move::swap( Move& move_ ) {
 	M_EPILOG
 }
 
-void SGF::Game::add_position( Position::position_t position_, int col_, int row_ ) {
+void SGF::add_position( Position::position_t position_, Coord const& coord_ ) {
 	M_PROLOG
-	add_position( position_, Move( col_, row_ ) );
+	if ( ! _currentMove ) {
+		_setups.push_back( Setup() );
+		_currentMove = _tree.create_new_root( Move( &_setups.back() ) );
+	} else if ( ! (*_currentMove)->_setup ) {
+		_setups.push_back( Setup() );
+		_currentMove = &*_currentMove->add_node( Move( &_setups.back() ) );
+	}
+	(*_currentMove)->_setup->_data[position_].push_back( coord_ );
 	return;
 	M_EPILOG
 }
 
-void SGF::Game::add_position( Position::position_t position_, Move const& move_ ) {
+SGF::game_tree_t::node_t SGF::move( game_tree_t::node_t node_, Coord const& coord_ ) {
 	M_PROLOG
-	if ( position_ == Position::BLACK )
-		_blackPreset.push_back( move_ );
-	else
-		_whitePreset.push_back( move_ );
-	return;
-	M_EPILOG
-}
-
-SGF::Game::game_tree_t::node_t SGF::Game::move( game_tree_t::node_t node_, int col_, int row_ ) {
-	M_PROLOG
-	return ( &*node_->add_node( Move( col_, row_ ) ) );
-	M_EPILOG
-}
-
-void SGF::Game::clear( void ) {
-	M_PROLOG
-	_blackPreset.clear();
-	_whitePreset.clear();
-	_tree.clear();
-	_firstToMove = Player::UNSET;
-	_blackName.clear();
-	_blackRank.clear();
-	_whiteName.clear();
-	_whiteRank.clear();
-	_komi = 5.5;
-	_handicap = 0;
-	_gobanSize = 19;
-	_result = 0;
-	_place.clear();
-	_comment.clear();
-	return;
+	return ( &*node_->add_node( Move( coord_ ) ) );
 	M_EPILOG
 }
 
