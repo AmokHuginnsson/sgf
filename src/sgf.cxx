@@ -56,10 +56,9 @@ char const _errMsg_[][50] = {
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	: _gameType( gameType_ ), _rawData(), _beg( NULL ), _cur( NULL ), _end( NULL ),
 	_cache(), _cachePropIdent(), _cachePropValue(),
-	_currentMove( NULL ), _app( app_ ),
+	_currentMove( NULL ), _app( app_ ), _rules( "Japanese" ),
 	_blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
-	_setups(),
-	_blackPreset(), _whitePreset(), _tree(), _firstToMove( Player::UNSET ),
+	_setups(), _tree(), _firstToMove( Player::UNSET ),
 	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
 	_result( 0 ), _place(), _comment() {
 }
@@ -78,12 +77,11 @@ void SGF::swap( SGF& sgf_ ) {
 		swap( _cachePropValue, sgf_._cachePropValue );
 		swap( _currentMove, sgf_._currentMove );
 		swap( _app, sgf_._app );
+		swap( _rules, sgf_._rules );
 		swap( _blackName, sgf_._blackName );
 		swap( _whiteName, sgf_._whiteName );
 		swap( _blackRank, sgf_._blackRank );
 		swap( _whiteRank, sgf_._whiteRank );
-		swap( _blackPreset, sgf_._blackPreset );
-		swap( _whitePreset, sgf_._whitePreset );
 		swap( _tree, sgf_._tree );
 		swap( _firstToMove, sgf_._firstToMove );
 		swap( _gobanSize, sgf_._gobanSize );
@@ -193,9 +191,8 @@ void SGF::clear( void ) {
 	M_PROLOG
 	_beg = _cur = _end = NULL;
 	_currentMove = NULL;
+	_rules.clear();
 	_rawData.clear();
-	_blackPreset.clear();
-	_whitePreset.clear();
 	_tree.clear();
 	_firstToMove = Player::UNSET;
 	_blackName.clear();
@@ -290,7 +287,11 @@ void SGF::parse_property( void ) {
 		int ff( lexical_cast<int>( singleValue ) );
 		if ( ( ff < 1 ) || ( ff > 4 ) )
 			throw SGFException( _errMsg_[ERROR::BAD_FILE_FORMAT], static_cast<int>( _cur - _beg ) );
-	} else if ( _cachePropIdent == "PB" )
+	} else if ( _cachePropIdent == "AP" )
+		_app = singleValue;
+	else if ( _cachePropIdent == "RU" )
+		_rules = singleValue;
+	else if ( _cachePropIdent == "PB" )
 		_blackName = singleValue;
 	else if ( _cachePropIdent == "PW" )
 		_whiteName = singleValue;
@@ -383,6 +384,7 @@ void SGF::parse_property_value( prop_values_t& values_ ) {
 void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << ( noNL_ ? "]" : "]\n" )
+		<< "RU[" << _rules << "]"
 		<< "SZ[" << _gobanSize << "]KM[" << setw( 1 ) << _komi << "]TM[" << _time << ( noNL_ ? "]" : "]\n" )
 		<< "PB[" << _blackName << "]PW[" << _whiteName << ( noNL_ ? "]" : "]\n" )
 		<< "BR[" << _blackRank << "]WR[" << _whiteRank << ( noNL_ ? "]" : "]\n" );
@@ -391,19 +393,39 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
 		stream_ << "C[" << _cache << "]";
 	}
-	if ( ! _blackPreset.empty() ) {
-		stream_ << "AB";
-		for ( preset_t::const_iterator it( _blackPreset.begin() ), end( _blackPreset.end() ); it != end; ++ it )
-			stream_ << '[' << it->coord() << ']';
+	if ( ! _tree.is_empty() ) {
+		game_tree_t::const_node_t root( _tree.get_root() );
+		if ( (*root)->_setup )
+			save_setup( root, stream_, noNL_ );
+		save_variations( _firstToMove, root, stream_, noNL_ );
 	}
-	if ( ! _whitePreset.empty() ) {
-		stream_ << "AW";
-		for ( preset_t::const_iterator it( _whitePreset.begin() ), end( _whitePreset.end() ); it != end; ++ it )
-			stream_ << '[' << it->coord() << ']';
-	}
-	if ( ! _tree.is_empty() )
-		save_variations( _firstToMove, _tree.get_root(), stream_, noNL_ );
 	stream_ << ( noNL_ ? ")" : ")\n" );
+	return;
+	M_EPILOG
+}
+
+void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInterface& stream_, bool ) {
+	M_PROLOG
+	char const* setupTag[] = {
+		"AR", "AB", "AW", "AT", "AS", "AC"
+	};
+	Setup const& setup( *(*node_)->_setup );
+	Setup::coords_t const* toRemove( NULL );
+	for ( Setup::setup_t::const_iterator it( setup._data.begin() ), end( setup._data.end() ); it != end; ++ it ) {
+		if ( it->first == Position::REMOVE ) {
+			toRemove = &it->second;
+			continue;
+		} else {
+			stream_ << setupTag[it->first];
+			for ( Setup::coords_t::const_iterator c( it->second.begin() ), ce( it->second.end() ); c != ce; ++ c )
+				stream_ << "[" << c->data() << "]";
+		}
+	}
+	if ( toRemove ) {
+		stream_ << "AR";
+		for ( Setup::coords_t::const_iterator it( toRemove->begin() ), end( toRemove->end() ); it != end; ++ it )
+			stream_ << "[" << it->data() << "]";
+	}
 	return;
 	M_EPILOG
 }

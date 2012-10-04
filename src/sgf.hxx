@@ -188,7 +188,6 @@ public:
 	};
 	static int const RESIGN = 0xffff;
 	static int const TIME = 0x7fff;
-	typedef yaal::hcore::HArray<Move> preset_t;
 	typedef yaal::hcore::HArray<Setup> setups_t;
 	typedef yaal::hcore::HTree<Move> game_tree_t;
 private:
@@ -203,13 +202,12 @@ private:
 	prop_values_t _cachePropValue;
 	game_tree_t::node_t _currentMove;
 	yaal::hcore::HString _app;
+	yaal::hcore::HString _rules;
 	yaal::hcore::HString _blackName;
 	yaal::hcore::HString _whiteName;
 	yaal::hcore::HString _blackRank;
 	yaal::hcore::HString _whiteRank;
 	setups_t _setups;
-	preset_t _blackPreset;
-	preset_t _whitePreset;
 	game_tree_t _tree;
 	Player::player_t _firstToMove;
 	int _gobanSize;
@@ -242,6 +240,7 @@ private:
 	void parse_property_value( prop_values_t& );
 	void not_eof( void );
 	void save_variations( Player::player_t, game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
+	void save_setup( game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
 	void save_move( Player::player_t, game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
 	SGF( SGF const& );
 	SGF& operator = ( SGF const& );
