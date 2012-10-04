@@ -82,7 +82,8 @@ public:
 			WHITE = 2,
 			TRIANGLE = 3,
 			SQUARE = 4,
-			CIRCLE = 5
+			CIRCLE = 5,
+			MARK = 6
 		} position_t;
 	};
 	struct Coord {

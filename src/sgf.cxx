@@ -222,14 +222,14 @@ void SGF::parse_game_tree( void ) {
 		throw SGFException( _errMsg_[ERROR::GT_OPEN_EXPECTED], static_cast<int>( _cur - _beg ) );
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
-	if ( ! _currentMove )
-		_currentMove = _tree.create_new_root();
 	parse_sequence();
-	game_tree_t::node_t preVariationMove( _currentMove );
-	while ( ( _cur != _end ) && ( *_cur != TERM::GT_CLOSE ) ) {
-		_currentMove = &*preVariationMove->add_node();
-		parse_game_tree();
-		not_eof();
+	if ( _currentMove ) {
+		game_tree_t::node_t preVariationMove( _currentMove );
+		while ( ( _cur != _end ) && ( *_cur != TERM::GT_CLOSE ) ) {
+			_currentMove = &*preVariationMove->add_node();
+			parse_game_tree();
+			not_eof();
+		}
 	}
 	if ( *_cur != TERM::GT_CLOSE )
 		throw SGFException( _errMsg_[ERROR::GT_CLOSE_EXPECTED], static_cast<int>( _cur - _beg ) );
@@ -241,13 +241,15 @@ void SGF::parse_game_tree( void ) {
 void SGF::parse_sequence( void ) {
 	M_PROLOG
 	parse_node();
-	_cur = non_space( _cur, _end );
-	not_eof();
-	while ( *_cur == TERM::NODE_MARK ) {
-		_currentMove = &*_currentMove->add_node();
-		parse_node();
+	if ( _currentMove ) {
 		_cur = non_space( _cur, _end );
 		not_eof();
+		while ( *_cur == TERM::NODE_MARK ) {
+			_currentMove = &*_currentMove->add_node();
+			parse_node();
+			_cur = non_space( _cur, _end );
+			not_eof();
+		}
 	}
 	return;
 	M_EPILOG
@@ -407,7 +409,7 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInterface& stream_, bool ) {
 	M_PROLOG
 	char const* setupTag[] = {
-		"AR", "AB", "AW", "AT", "AS", "AC"
+		"AE", "AB", "AW", "TR", "SQ", "CR", "MA"
 	};
 	Setup const& setup( *(*node_)->_setup );
 	Setup::coords_t const* toRemove( NULL );
@@ -447,14 +449,20 @@ void SGF::save_variations( Player::player_t from_, game_tree_t::const_node_t nod
 	int childCount( 0 );
 	while ( ( childCount = static_cast<int>( node_->child_count() ) ) == 1 ) {
 		node_ = &*node_->begin();
-		save_move( from_, node_, stream_, noNL_ );
+		if ( (*node_)->_setup )
+			save_setup( node_, stream_, noNL_ );
+		else
+			save_move( from_, node_, stream_, noNL_ );
 		from_ = ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK );
 	}
 	if ( childCount > 1 ) /* We have variations. */ {
 		for ( game_tree_t::HNode::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
 			stream_ << ( noNL_ ? "(" : "\n(" );
 			save_move( from_, &*it, stream_, noNL_ );
-			save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_, noNL_ );
+			if ( (*it)->_setup )
+				save_setup( &*it, stream_, noNL_ );
+			else
+				save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_, noNL_ );
 			stream_ << ( noNL_ ? ")" : ")\n" );
 		}
 	}
