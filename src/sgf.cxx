@@ -31,12 +31,14 @@ Copyright:
 #include <yaal/hcore/hfile.hxx>
 #include <yaal/hcore/hcore.hxx>
 #include <yaal/tools/tools.hxx>
+#include <yaal/tools/assign.hxx>
 M_VCSID( "$Id: "__ID__" $" )
 #include "sgf.hxx"
 #include "config.hxx"
 
 using namespace yaal;
 using namespace yaal::hcore;
+using namespace yaal::tools;
 
 namespace sgf {
 
@@ -270,6 +272,20 @@ void SGF::parse_node( void ) {
 	M_EPILOG
 }
 
+namespace {
+
+typedef HMap<HString, SGF::Position::position_t> position_tag_dict_t;
+
+position_tag_dict_t const _positionTagDict_ = sequence<HString>( "AE", SGF::Position::REMOVE )
+	( "AB", SGF::Position::BLACK )
+	( "AW", SGF::Position::WHITE )
+	( "TR", SGF::Position::TRIANGLE )
+	( "SQ", SGF::Position::SQUARE )
+	( "CR", SGF::Position::CIRCLE )
+	( "MA", SGF::Position::MARK );
+
+}
+
 void SGF::parse_property( void ) {
 	M_PROLOG
 	_cachePropIdent = parse_property_ident();
@@ -324,12 +340,10 @@ void SGF::parse_property( void ) {
 		char player( static_cast<char>( toupper( singleValue[0] ) ) );
 		if ( player == 'W' )
 			_result = _result;
-	} else if ( _cachePropIdent == "AB" ) {
+	} else if ( _positionTagDict_.find( _cachePropIdent ) != _positionTagDict_.end() ) {
+		position_tag_dict_t::const_iterator tag( _positionTagDict_.find( _cachePropIdent ) );
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
-			add_position( Position::BLACK, Coord( *it ) );
-	} else if ( _cachePropIdent == "AW" ) {
-		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
-			add_position( Position::WHITE, Coord( *it ) );
+			add_position( tag->second, Coord( *it ) );
 	} else if ( _cachePropIdent == "B" ) {
 		if ( _firstToMove == Player::UNSET )
 			_firstToMove = Player::BLACK;
@@ -489,7 +503,7 @@ void SGF::add_position( Position::position_t position_, Coord const& coord_ ) {
 		_currentMove = _tree.create_new_root( Move( &_setups.back() ) );
 	} else if ( ! (*_currentMove)->_setup ) {
 		_setups.push_back( Setup() );
-		_currentMove = &*_currentMove->add_node( Move( &_setups.back() ) );
+		(*_currentMove)->_setup = &_setups.back();
 	}
 	(*_currentMove)->_setup->add_position( position_, coord_ );
 	return;
@@ -504,6 +518,10 @@ SGF::game_tree_t::node_t SGF::move( game_tree_t::node_t node_, Coord const& coor
 
 void SGF::Setup::add_position( Position::position_t position_, Coord const& coord_ ) {
 	M_PROLOG
+	if ( ( position_ == Position::REMOVE )
+			|| ( position_ == Position::BLACK )
+			|| ( position_ == Position::WHITE ) )
+		_setup = true;
 	if ( position_ == Position::REMOVE ) {
 		for ( Setup::setup_t::iterator it( _data.begin() ), end( _data.end() ); it != end; ++ it ) {
 			if ( it->first == Position::REMOVE )

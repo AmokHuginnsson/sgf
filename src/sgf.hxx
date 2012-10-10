@@ -133,13 +133,15 @@ public:
 	struct Setup {
 		typedef yaal::hcore::HList<Coord> coords_t;
 		typedef yaal::hcore::HMap<Position::position_t, coords_t> setup_t;
+		bool _setup;
 		setup_t _data;
 		Setup( void )
-			: _data()
+			: _setup( false ), _data()
 			{}
 		void swap( Setup& s_ ) {
 			if ( &s_ != this ) {
 				using yaal::swap;
+				swap( _setup, s_._setup );
 				swap( _data, s_._data );
 			}
 		}
