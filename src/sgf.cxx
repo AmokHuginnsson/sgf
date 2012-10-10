@@ -224,14 +224,14 @@ void SGF::parse_game_tree( void ) {
 		throw SGFException( _errMsg_[ERROR::GT_OPEN_EXPECTED], static_cast<int>( _cur - _beg ) );
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
+	if ( ! _currentMove )
+		_currentMove = _tree.create_new_root();
 	parse_sequence();
-	if ( _currentMove ) {
-		game_tree_t::node_t preVariationMove( _currentMove );
-		while ( ( _cur != _end ) && ( *_cur != TERM::GT_CLOSE ) ) {
-			_currentMove = &*preVariationMove->add_node();
-			parse_game_tree();
-			not_eof();
-		}
+	game_tree_t::node_t preVariationMove( _currentMove );
+	while ( ( _cur != _end ) && ( *_cur != TERM::GT_CLOSE ) ) {
+		_currentMove = &*preVariationMove->add_node();
+		parse_game_tree();
+		not_eof();
 	}
 	if ( *_cur != TERM::GT_CLOSE )
 		throw SGFException( _errMsg_[ERROR::GT_CLOSE_EXPECTED], static_cast<int>( _cur - _beg ) );
@@ -402,8 +402,13 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << ( noNL_ ? "]" : "]\n" )
 		<< "RU[" << _rules << "]"
 		<< "SZ[" << _gobanSize << "]KM[" << setw( 1 ) << _komi << "]TM[" << _time << ( noNL_ ? "]" : "]\n" )
-		<< "PB[" << _blackName << "]PW[" << _whiteName << ( noNL_ ? "]" : "]\n" )
-		<< "BR[" << _blackRank << "]WR[" << _whiteRank << ( noNL_ ? "]" : "]\n" );
+		<< "PB[" << _blackName << "]PW[" << _whiteName << "]";
+	if ( ! _blackRank.is_empty() )
+		stream_ << ( noNL_ ? "" : "\n" ) << "BR[" << _blackRank << "]";
+	if ( ! _whiteRank.is_empty() )
+		stream_ << "WR[" << _whiteRank << "]";
+	if ( ! noNL_ && ! ( _blackRank.is_empty() && _whiteRank.is_empty() ) )
+		stream_ << "\n";
 	if ( ! _comment.is_empty() ) {
 		_cache = _comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
@@ -420,13 +425,15 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	M_EPILOG
 }
 
-void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInterface& stream_, bool ) {
+void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	char const* setupTag[] = {
 		"AE", "AB", "AW", "TR", "SQ", "CR", "MA"
 	};
 	Setup const& setup( *(*node_)->_setup );
 	Setup::coords_t const* toRemove( NULL );
+	if ( setup._setup )
+		stream_ << ( noNL_ ? ";" : "\n;" );
 	for ( Setup::setup_t::const_iterator it( setup._data.begin() ), end( setup._data.end() ); it != end; ++ it ) {
 		if ( it->first == Position::REMOVE ) {
 			toRemove = &it->second;
@@ -446,9 +453,9 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 	M_EPILOG
 }
 
-void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool ) {
+void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
-	stream_ << ';' << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord() << ']';
+	stream_ << ( noNL_ ? ";" : "\n;" ) << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord() << ']';
 	if ( ! (*node_)->_comment.is_empty() ) {
 		_cache = (*node_)->_comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
