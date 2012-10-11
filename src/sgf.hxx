@@ -57,7 +57,9 @@ public:
 			PROP_VAL_CLOSE_EXPECTED = 6,
 			NODE_MARK_EXPECTED = 7,
 			BAD_GAME_TYPE = 8,
-			BAD_FILE_FORMAT = 9
+			BAD_FILE_FORMAT = 9,
+			MIXED_NODE = 10,
+			DUPLICATED_COORDINATE = 11
 		} code_t;
 	};
 	struct TERM {
@@ -130,44 +132,56 @@ public:
 			return ( ( _data[0] != c_._data[0] ) || ( _data[1] != c_._data[1] ) );
 		}
 	};
+	struct Move;
 	struct Setup {
 		typedef yaal::hcore::HList<Coord> coords_t;
 		typedef yaal::hcore::HMap<Position::position_t, coords_t> setup_t;
-		bool _setup;
 		setup_t _data;
 		Setup( void )
-			: _setup( false ), _data()
+			: _data()
 			{}
 		void swap( Setup& s_ ) {
 			if ( &s_ != this ) {
 				using yaal::swap;
-				swap( _setup, s_._setup );
 				swap( _data, s_._data );
 			}
 		}
+	private:
 		void add_position( Position::position_t, Coord const& );
+		friend struct Move;
 	};
-	struct Move {
+	class Move {
+	public:
+		struct TYPE {
+			typedef enum {
+				INVALID,
+				MOVE,
+				SETUP
+			} type_t;
+		};
+	private:
+		TYPE::type_t _type;
 		Coord _coord;
 		yaal::hcore::HString _comment;
 		Setup* _setup;
+	public:
 		Move( void )
-			: _coord(), _comment(), _setup( NULL )
+			: _type( TYPE::INVALID ), _coord(), _comment(), _setup( NULL )
 			{}
 		Move( Setup* setup_ )
-			: _coord(), _comment(), _setup( setup_ )
+			: _type( TYPE::SETUP ), _coord(), _comment(), _setup( setup_ )
 			{}
 		Move( Coord const& coord_ )
-			: _coord( coord_ ), _comment(), _setup( NULL ) {
+			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ) {
 		}
 		Move( char const* const coord_ )
-			: _coord( coord_ ), _comment(), _setup( NULL )
+			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL )
 			{ }
 		Move( yaal::hcore::HString const& coord_ )
-			: _coord( coord_ ), _comment(), _setup( NULL )
+			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL )
 			{ }
 		Move( Move const& m_ )
-			: _coord( m_._coord ), _comment( m_._comment ), _setup( m_._setup )
+			: _type( m_._type ), _coord( m_._coord ), _comment( m_._comment ), _setup( m_._setup )
 			{ }
 		Move& operator = ( Move const& m_ ) {
 			if ( &m_ != this ) {
@@ -179,19 +193,32 @@ public:
 		void swap( Move& );
 		char const* coord( void ) const
 			{ return ( _coord.data() ); }
-		void set_coord( Coord const& coord_ ) {
-			_coord = coord_;
-		}
+		void set_coord( Coord const& );
+		void set_setup( Setup* );
+		void add_comment( yaal::hcore::HString const& );
+		void add_position( Position::position_t, Coord const& );
 		int col( void ) const {
 			return ( _coord.col() );
 		}
 		int row( void ) const {
 			return ( _coord.row() );
 		}
+		yaal::hcore::HString const& comment( void ) const {
+			return ( _comment );
+		}
+		TYPE::type_t type( void ) const {
+			return ( _type );
+		}
+		Setup* setup( void ) {
+			return ( _setup );
+		}
+		Setup const* setup( void ) const {
+			return ( _setup );
+		}
 	};
 	static int const RESIGN = 0xffff;
 	static int const TIME = 0x7fff;
-	typedef yaal::hcore::HArray<Setup> setups_t;
+	typedef yaal::hcore::HList<Setup> setups_t;
 	typedef yaal::hcore::HTree<Move> game_tree_t;
 private:
 	GAME_TYPE::game_type_t _gameType;

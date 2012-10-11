@@ -52,7 +52,9 @@ char const _errMsg_[][50] = {
 	"Expected property value closing sequence.",
 	"Expected node start marker sequence.",
 	"Bad game type.",
-	"Bad file format."
+	"Bad file format.",
+	"Cannot mix `move' with `setup' nodes.",
+	"Duplicated coordinate in setup."
 };
 
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
@@ -247,7 +249,13 @@ void SGF::parse_sequence( void ) {
 		_cur = non_space( _cur, _end );
 		not_eof();
 		while ( *_cur == TERM::NODE_MARK ) {
-			_currentMove = &*_currentMove->add_node();
+			if ( ( _currentMove == _tree.get_root() ) || ( (*_currentMove)->type() != Move::TYPE::INVALID ) )
+				_currentMove = &*_currentMove->add_node();
+			else {
+				_cur = non_space( _cur, _end );
+				not_eof();
+				clog << "Empty node!" << endl;
+			}
 			parse_node();
 			_cur = non_space( _cur, _end );
 			not_eof();
@@ -354,7 +362,7 @@ void SGF::parse_property( void ) {
 		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "C" ) {
 		if ( _firstToMove != Player::UNSET )
-			(*_currentMove)->_comment = singleValue;
+			(*_currentMove)->add_comment( singleValue );
 		else
 			_comment += singleValue;
 	} else
@@ -416,7 +424,7 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	}
 	if ( ! _tree.is_empty() ) {
 		game_tree_t::const_node_t root( _tree.get_root() );
-		if ( (*root)->_setup )
+		if ( (*root)->setup() )
 			save_setup( root, stream_, noNL_ );
 		save_variations( _firstToMove, root, stream_, noNL_ );
 	}
@@ -430,24 +438,24 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 	char const* setupTag[] = {
 		"AE", "AB", "AW", "TR", "SQ", "CR", "MA"
 	};
-	Setup const& setup( *(*node_)->_setup );
-	Setup::coords_t const* toRemove( NULL );
-	if ( setup._setup )
+	Move const& m( *(*node_) );
+	Setup const& setup( *m.setup() );
+	if ( m.type() == Move::TYPE::SETUP )
 		stream_ << ( noNL_ ? ";" : "\n;" );
+	Setup::setup_t::const_iterator toRemove( setup._data.find( Position::REMOVE ) );
+	if ( toRemove != setup._data.end() ) {
+		stream_ << "AE";
+		for ( Setup::coords_t::const_iterator it( toRemove->second.begin() ), end( toRemove->second.end() ); it != end; ++ it )
+			stream_ << "[" << it->data() << "]";
+	}
 	for ( Setup::setup_t::const_iterator it( setup._data.begin() ), end( setup._data.end() ); it != end; ++ it ) {
 		if ( it->first == Position::REMOVE ) {
-			toRemove = &it->second;
 			continue;
 		} else {
 			stream_ << setupTag[it->first];
 			for ( Setup::coords_t::const_iterator c( it->second.begin() ), ce( it->second.end() ); c != ce; ++ c )
 				stream_ << "[" << c->data() << "]";
 		}
-	}
-	if ( toRemove ) {
-		stream_ << "AR";
-		for ( Setup::coords_t::const_iterator it( toRemove->begin() ), end( toRemove->end() ); it != end; ++ it )
-			stream_ << "[" << it->data() << "]";
 	}
 	return;
 	M_EPILOG
@@ -456,8 +464,8 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	stream_ << ( noNL_ ? ";" : "\n;" ) << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord() << ']';
-	if ( ! (*node_)->_comment.is_empty() ) {
-		_cache = (*node_)->_comment;
+	if ( ! (*node_)->comment().is_empty() ) {
+		_cache = (*node_)->comment();
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
 		stream_ << "C[" << _cache << "]";
 	}
@@ -470,7 +478,7 @@ void SGF::save_variations( Player::player_t from_, game_tree_t::const_node_t nod
 	int childCount( 0 );
 	while ( ( childCount = static_cast<int>( node_->child_count() ) ) == 1 ) {
 		node_ = &*node_->begin();
-		if ( (*node_)->_setup )
+		if ( (*node_)->setup() )
 			save_setup( node_, stream_, noNL_ );
 		else
 			save_move( from_, node_, stream_, noNL_ );
@@ -480,7 +488,7 @@ void SGF::save_variations( Player::player_t from_, game_tree_t::const_node_t nod
 		for ( game_tree_t::HNode::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
 			stream_ << ( noNL_ ? "(" : "\n(" );
 			save_move( from_, &*it, stream_, noNL_ );
-			if ( (*it)->_setup )
+			if ( (*it)->setup() )
 				save_setup( &*it, stream_, noNL_ );
 			else
 				save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_, noNL_ );
@@ -495,10 +503,21 @@ void SGF::Move::swap( Move& move_ ) {
 	M_PROLOG
 	if ( &move_ != this ) {
 		using yaal::swap;
+		swap( _type, move_._type );
 		swap( _coord, move_._coord );
 		swap( _comment, move_._comment );
 		swap( _setup, move_._setup );
 	}
+	return;
+	M_EPILOG
+}
+
+void SGF::Move::set_coord( Coord const& coord_ ) {
+	M_PROLOG
+	if ( _type == TYPE::SETUP )
+		throw SGFException( _errMsg_[ERROR::MIXED_NODE] );
+	_coord = coord_;
+	_type = TYPE::MOVE;
 	return;
 	M_EPILOG
 }
@@ -508,11 +527,11 @@ void SGF::add_position( Position::position_t position_, Coord const& coord_ ) {
 	if ( ! _currentMove ) {
 		_setups.push_back( Setup() );
 		_currentMove = _tree.create_new_root( Move( &_setups.back() ) );
-	} else if ( ! (*_currentMove)->_setup ) {
+	} else if ( ! (*_currentMove)->setup() ) {
 		_setups.push_back( Setup() );
-		(*_currentMove)->_setup = &_setups.back();
+		(*_currentMove)->set_setup( &_setups.back() );
 	}
-	(*_currentMove)->_setup->add_position( position_, coord_ );
+	(*_currentMove)->add_position( position_, coord_ );
 	return;
 	M_EPILOG
 }
@@ -523,12 +542,34 @@ SGF::game_tree_t::node_t SGF::move( game_tree_t::node_t node_, Coord const& coor
 	M_EPILOG
 }
 
-void SGF::Setup::add_position( Position::position_t position_, Coord const& coord_ ) {
-	M_PROLOG
+void SGF::Move::add_position( Position::position_t position_, Coord const& coord_ ) {
 	if ( ( position_ == Position::REMOVE )
 			|| ( position_ == Position::BLACK )
-			|| ( position_ == Position::WHITE ) )
-		_setup = true;
+			|| ( position_ == Position::WHITE ) ) {
+		if ( _type == TYPE::MOVE )
+			throw SGFException( _errMsg_[ERROR::MIXED_NODE] );
+		_type = TYPE::SETUP;
+	}
+	_setup->add_position( position_, coord_ );
+}
+
+void SGF::Move::add_comment( yaal::hcore::HString const& comment_ ) {
+	M_PROLOG
+	_comment += comment_;
+	return;
+	M_EPILOG
+}
+
+void SGF::Move::set_setup( Setup* setup_ ) {
+	M_PROLOG
+	M_ASSERT( ! _setup );
+	_setup = setup_;
+	return;
+	M_EPILOG
+}
+
+void SGF::Setup::add_position( Position::position_t position_, Coord const& coord_ ) {
+	M_PROLOG
 	if ( position_ == Position::REMOVE ) {
 		for ( Setup::setup_t::iterator it( _data.begin() ), end( _data.end() ); it != end; ++ it ) {
 			if ( it->first == Position::REMOVE )
@@ -540,7 +581,7 @@ void SGF::Setup::add_position( Position::position_t position_, Coord const& coor
 			if ( it->first == Position::REMOVE )
 				continue;
 			if ( find( it->second.begin(), it->second.end(), coord_ ) != it->second.end() )
-				throw SGFException( "Duplicated coordinate in setup." );
+				throw SGFException( _errMsg_[ERROR::DUPLICATED_COORDINATE] );
 		}
 	}
 	coords_t& c( _data[position_] );
