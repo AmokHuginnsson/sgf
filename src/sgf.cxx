@@ -86,6 +86,7 @@ void SGF::swap( SGF& sgf_ ) {
 		swap( _whiteName, sgf_._whiteName );
 		swap( _blackRank, sgf_._blackRank );
 		swap( _whiteRank, sgf_._whiteRank );
+		swap( _setups, sgf_._setups );
 		swap( _tree, sgf_._tree );
 		swap( _firstToMove, sgf_._firstToMove );
 		swap( _gobanSize, sgf_._gobanSize );
@@ -193,19 +194,25 @@ void SGF::parse( void ) {
 
 void SGF::clear( void ) {
 	M_PROLOG
-	_beg = _cur = _end = NULL;
-	_currentMove = NULL;
-	_rules.clear();
 	_rawData.clear();
-	_tree.clear();
-	_firstToMove = Player::UNSET;
+	_beg = _cur = _end = NULL;
+	_cache.clear();
+	_cachePropIdent.clear();
+	_cachePropValue.clear();
+	_currentMove = NULL;
+	_app.clear();
+	_rules.clear();
 	_blackName.clear();
 	_blackRank.clear();
 	_whiteName.clear();
 	_whiteRank.clear();
-	_komi = 5.5;
-	_handicap = 0;
+	_setups.clear();
+	_tree.clear();
+	_firstToMove = Player::UNSET;
 	_gobanSize = 19;
+	_time = 0;
+	_handicap = 0;
+	_komi = 5.5;
 	_result = 0;
 	_place.clear();
 	_comment.clear();
