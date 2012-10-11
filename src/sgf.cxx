@@ -440,7 +440,7 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 	};
 	Move const& m( *(*node_) );
 	Setup const& setup( *m.setup() );
-	if ( m.type() == Move::TYPE::SETUP )
+	if ( ( m.type() == Move::TYPE::SETUP ) && ( node_ != _tree.get_root() ) )
 		stream_ << ( noNL_ ? ";" : "\n;" );
 	Setup::setup_t::const_iterator toRemove( setup._data.find( Position::REMOVE ) );
 	if ( toRemove != setup._data.end() ) {
@@ -478,20 +478,24 @@ void SGF::save_variations( Player::player_t from_, game_tree_t::const_node_t nod
 	int childCount( 0 );
 	while ( ( childCount = static_cast<int>( node_->child_count() ) ) == 1 ) {
 		node_ = &*node_->begin();
+		if ( (*node_)->type() == Move::TYPE::MOVE ) {
+			save_move( from_, node_, stream_, noNL_ );
+			from_ = ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK );
+		}
 		if ( (*node_)->setup() )
 			save_setup( node_, stream_, noNL_ );
-		else
-			save_move( from_, node_, stream_, noNL_ );
-		from_ = ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK );
 	}
 	if ( childCount > 1 ) /* We have variations. */ {
 		for ( game_tree_t::HNode::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
 			stream_ << ( noNL_ ? "(" : "\n(" );
-			save_move( from_, &*it, stream_, noNL_ );
+			Player::player_t p( from_ );
+			if ( (*it)->type() == Move::TYPE::MOVE ) {
+				save_move( from_, &*it, stream_, noNL_ );
+				p = ( p == Player::BLACK ? Player::WHITE : Player::BLACK );
+			}
 			if ( (*it)->setup() )
 				save_setup( &*it, stream_, noNL_ );
-			else
-				save_variations( ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK ), &*it, stream_, noNL_ );
+			save_variations( p, &*it, stream_, noNL_ );
 			stream_ << ( noNL_ ? ")" : ")\n" );
 		}
 	}
