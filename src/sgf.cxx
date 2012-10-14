@@ -470,7 +470,7 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 
 void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
-	stream_ << ( noNL_ ? ";" : "\n;" ) << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord() << ']';
+	stream_ << ( noNL_ ? ";" : "\n;" ) << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord().data() << ']';
 	if ( ! (*node_)->comment().is_empty() ) {
 		_cache = (*node_)->comment();
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );

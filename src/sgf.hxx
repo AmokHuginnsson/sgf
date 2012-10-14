@@ -191,8 +191,8 @@ public:
 			return ( *this );
 		}
 		void swap( Move& );
-		char const* coord( void ) const
-			{ return ( _coord.data() ); }
+		Coord const& coord( void ) const
+			{ return ( _coord ); }
 		void set_coord( Coord const& );
 		void set_setup( Setup* );
 		void add_comment( yaal::hcore::HString const& );
