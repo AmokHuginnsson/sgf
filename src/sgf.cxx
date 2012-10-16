@@ -126,11 +126,39 @@ void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name
 void SGF::set_info( Player::player_t player_, int gobanSize_, int handicap_, double komi_, int time_, yaal::hcore::HString const& place_ ) {
 	M_PROLOG
 	_firstToMove = player_;
-	_gobanSize = gobanSize_;
-	_handicap = handicap_;
-	_komi = komi_;
-	_time = time_;
+	set_board_size( gobanSize_ );
+	set_handicap( handicap_ );
+	set_komi( komi_ );
+	set_time( time_ );
 	_place = place_;
+	return;
+	M_EPILOG
+}
+
+void SGF::set_board_size( int gobanSize_ ) {
+	M_PROLOG
+	_gobanSize = gobanSize_;
+	return;
+	M_EPILOG
+}
+
+void SGF::set_komi( double komi_ ) {
+	M_PROLOG
+	_komi = komi_;
+	return;
+	M_EPILOG
+}
+
+void SGF::set_handicap( int handicap_ ) {
+	M_PROLOG
+	_handicap = handicap_;
+	return;
+	M_EPILOG
+}
+
+void SGF::set_time( int time_ ) {
+	M_PROLOG
+	_time = time_;
 	return;
 	M_EPILOG
 }
@@ -140,6 +168,22 @@ void SGF::add_comment( yaal::hcore::HString const& comment_ ) {
 	_comment += comment_;
 	return;
 	M_EPILOG
+}
+
+int SGF::get_board_size( void ) const {
+	return ( _gobanSize );
+}
+
+double SGF::get_komi( void ) const {
+	return ( _komi );
+}
+
+int SGF::get_handicap( void ) const {
+	return ( _handicap );
+}
+
+int SGF::get_time( void ) const {
+	return ( _time );
 }
 
 char const* non_space( char const* first, char const* last ) {

@@ -258,6 +258,14 @@ public:
 	void add_position( Position::position_t, Coord const& );
 	void set_player( Player::player_t, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
 	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
+	void set_board_size( int );
+	void set_komi( double );
+	void set_handicap( int );
+	void set_time( int );
+	int get_board_size( void ) const;
+	double get_komi( void ) const;
+	int get_handicap( void ) const;
+	int get_time( void ) const;
 	void add_comment( yaal::hcore::HString const& );
 private:
 	void parse( void );
