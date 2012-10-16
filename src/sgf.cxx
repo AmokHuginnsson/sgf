@@ -459,8 +459,10 @@ void SGF::parse_property_value( prop_values_t& values_ ) {
 void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << ( noNL_ ? "]" : "]\n" )
-		<< "RU[" << _rules << "]"
-		<< "SZ[" << _gobanSize << "]KM[" << setw( 1 ) << _komi << "]TM[" << _time << ( noNL_ ? "]" : "]\n" )
+		<< "RU[" << _rules << "]" << "SZ[" << _gobanSize << "]";
+	if ( _handicap > 0 )
+		stream_ << "HA[" << _handicap << "]";
+	stream_ << "KM[" << setw( 1 ) << _komi << "]TM[" << _time << ( noNL_ ? "]" : "]\n" )
 		<< "PB[" << _blackName << "]PW[" << _whiteName << "]";
 	if ( ! _blackRank.is_empty() )
 		stream_ << ( noNL_ ? "" : "\n" ) << "BR[" << _blackRank << "]";
