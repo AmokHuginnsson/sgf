@@ -341,7 +341,9 @@ position_tag_dict_t const _positionTagDict_ = sequence<HString>( "AE", SGF::Posi
 	( "TR", SGF::Position::TRIANGLE )
 	( "SQ", SGF::Position::SQUARE )
 	( "CR", SGF::Position::CIRCLE )
-	( "MA", SGF::Position::MARK );
+	( "MA", SGF::Position::MARK )
+	( "TB", SGF::Position::BLACK_TERITORY )
+	( "TW", SGF::Position::WHITE_TERITORY );
 
 }
 
@@ -489,7 +491,7 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	char const* setupTag[] = {
-		"AE", "AB", "AW", "TR", "SQ", "CR", "MA"
+		"AE", "AB", "AW", "TR", "SQ", "CR", "MA", "TB", "TW"
 	};
 	Move const& m( *(*node_) );
 	Setup const& setup( *m.setup() );

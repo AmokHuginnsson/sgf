@@ -85,7 +85,9 @@ public:
 			TRIANGLE = 3,
 			SQUARE = 4,
 			CIRCLE = 5,
-			MARK = 6
+			MARK = 6,
+			BLACK_TERITORY = 7,
+			WHITE_TERITORY = 8
 		} position_t;
 	};
 	struct Coord {
