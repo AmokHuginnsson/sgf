@@ -40,6 +40,7 @@ char const* non_space( char const*, char const* );
 
 class SGF {
 public:
+	typedef SGF this_type;
 	struct GAME_TYPE {
 		typedef enum {
 			GO = 1,
