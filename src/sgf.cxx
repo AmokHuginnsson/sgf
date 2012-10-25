@@ -54,7 +54,8 @@ char const _errMsg_[][50] = {
 	"Bad game type.",
 	"Bad file format.",
 	"Cannot mix `move' with `setup' nodes.",
-	"Duplicated coordinate in setup."
+	"Duplicated coordinate in setup.",
+	"Move not from this record."
 };
 
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
@@ -646,6 +647,42 @@ void SGF::Setup::add_position( Position::position_t position_, Coord const& coor
 	coords_t& c( _data[position_] );
 	if ( ( position_ != Position::REMOVE ) || ( find( c.begin(), c.end(), coord_ ) == c.end() ) )
 		c.push_back( coord_ );
+	return;
+	M_EPILOG
+}
+
+SGF::game_tree_t::const_node_t SGF::get_current_move( void ) const {
+	return ( _currentMove );
+}
+
+void SGF::set_current_move( game_tree_t::const_node_t node_ ) {
+	M_PROLOG
+	if ( &node_->get_tree() != &_tree )
+		throw SGFException( _errMsg_[ERROR::MOVE_OUT_OF_RECORD] );
+	_currentMove = const_cast<game_tree_t::node_t>( node_ );
+	return;
+	M_EPILOG
+}
+
+void SGF::Move::clear_markers( Position::position_t position_ ) {
+	M_PROLOG
+	if ( _setup )
+		_setup->_data.erase( position_ );
+	return;
+	M_EPILOG
+}
+
+void SGF::clear_markers( game_tree_t::const_node_t node_ ) {
+	M_PROLOG
+	if ( &node_->get_tree() != &_tree )
+		throw SGFException( _errMsg_[ERROR::MOVE_OUT_OF_RECORD] );
+	game_tree_t::node_t node( const_cast<game_tree_t::node_t>( node_ ) );
+	(*node)->clear_markers( Position::BLACK_TERITORY );
+	(*node)->clear_markers( Position::WHITE_TERITORY );
+	(*node)->clear_markers( Position::SQUARE );
+	(*node)->clear_markers( Position::CIRCLE );
+	(*node)->clear_markers( Position::TRIANGLE );
+	(*node)->clear_markers( Position::MARK );
 	return;
 	M_EPILOG
 }

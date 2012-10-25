@@ -60,7 +60,8 @@ public:
 			BAD_GAME_TYPE = 8,
 			BAD_FILE_FORMAT = 9,
 			MIXED_NODE = 10,
-			DUPLICATED_COORDINATE = 11
+			DUPLICATED_COORDINATE = 11,
+			MOVE_OUT_OF_RECORD = 12
 		} code_t;
 	};
 	struct TERM {
@@ -200,6 +201,7 @@ public:
 		void set_setup( Setup* );
 		void add_comment( yaal::hcore::HString const& );
 		void add_position( Position::position_t, Coord const& );
+		void clear_markers( Position::position_t );
 		int col( void ) const {
 			return ( _coord.col() );
 		}
@@ -270,6 +272,9 @@ public:
 	int get_handicap( void ) const;
 	int get_time( void ) const;
 	void add_comment( yaal::hcore::HString const& );
+	game_tree_t::const_node_t get_current_move( void ) const;
+	void set_current_move( game_tree_t::const_node_t );
+	void clear_markers( game_tree_t::const_node_t );
 private:
 	void parse( void );
 	game_tree_t::node_t move( game_tree_t::node_t, Coord const& );
