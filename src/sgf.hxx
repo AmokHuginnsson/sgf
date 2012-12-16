@@ -272,6 +272,7 @@ public:
 	int get_handicap( void ) const;
 	int get_time( void ) const;
 	void add_comment( yaal::hcore::HString const& );
+	game_tree_t const& game_tree( void ) const;
 	game_tree_t::const_node_t get_current_move( void ) const;
 	void set_current_move( game_tree_t::const_node_t );
 	void clear_markers( game_tree_t::const_node_t );

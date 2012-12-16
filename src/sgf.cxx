@@ -651,6 +651,10 @@ void SGF::Setup::add_position( Position::position_t position_, Coord const& coor
 	M_EPILOG
 }
 
+SGF::game_tree_t const& SGF::game_tree( void ) const {
+	return ( _tree );
+}
+
 SGF::game_tree_t::const_node_t SGF::get_current_move( void ) const {
 	return ( _currentMove );
 }
