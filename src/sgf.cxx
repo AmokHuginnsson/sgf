@@ -61,7 +61,8 @@ char const _errMsg_[][50] = {
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	: _gameType( gameType_ ), _rawData(), _beg( NULL ), _cur( NULL ), _end( NULL ),
 	_cache(), _cachePropIdent(), _cachePropValue(),
-	_currentMove( NULL ), _app( app_ ), _rules( "Japanese" ),
+	_currentMove( NULL ), _app( app_ ), _gameName(), _date(),
+	_event(), _round(), _source(), _author(), _rules( "Japanese" ),
 	_blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
 	_setups(), _tree(), _firstToMove( Player::UNSET ),
 	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
@@ -82,6 +83,12 @@ void SGF::swap( SGF& sgf_ ) {
 		swap( _cachePropValue, sgf_._cachePropValue );
 		swap( _currentMove, sgf_._currentMove );
 		swap( _app, sgf_._app );
+		swap( _gameName, sgf_._gameName );
+		swap( _date, sgf_._date );
+		swap( _event, sgf_._event );
+		swap( _round, sgf_._round );
+		swap( _source, sgf_._source );
+		swap( _author, sgf_._author );
 		swap( _rules, sgf_._rules );
 		swap( _blackName, sgf_._blackName );
 		swap( _whiteName, sgf_._whiteName );
@@ -246,6 +253,12 @@ void SGF::clear( void ) {
 	_cachePropValue.clear();
 	_currentMove = NULL;
 	_app.clear();
+	_gameName.clear();
+	_date.clear();
+	_event.clear();
+	_round.clear();
+	_source.clear();
+	_author.clear();
 	_rules.clear();
 	_blackName.clear();
 	_blackRank.clear();
@@ -369,6 +382,18 @@ void SGF::parse_property( void ) {
 			throw SGFException( _errMsg_[ERROR::BAD_FILE_FORMAT], static_cast<int>( _cur - _beg ) );
 	} else if ( _cachePropIdent == "AP" )
 		_app = singleValue;
+	else if ( _cachePropIdent == "GN" )
+		_gameName = singleValue;
+	else if ( _cachePropIdent == "DT" )
+		_date = singleValue;
+	else if ( _cachePropIdent == "EV" )
+		_event = singleValue;
+	else if ( _cachePropIdent == "RO" )
+		_round = singleValue;
+	else if ( _cachePropIdent == "SO" )
+		_source = singleValue;
+	else if ( _cachePropIdent == "AN" )
+		_author = singleValue;
 	else if ( _cachePropIdent == "RU" )
 		_rules = singleValue;
 	else if ( _cachePropIdent == "PB" )
@@ -406,6 +431,12 @@ void SGF::parse_property( void ) {
 		position_tag_dict_t::const_iterator tag( _positionTagDict_.find( _cachePropIdent ) );
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
 			add_position( tag->second, Coord( *it ) );
+	} else if ( _cachePropIdent == "LB" ) {
+		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it ) {
+			M_ENSURE( it->find( ":" ) == 2 );
+			_cache.assign( it->raw() + 3, it->get_length() - 3 );
+			add_label( make_pair( Coord( *it ), _cache ) );
+		}
 	} else if ( _cachePropIdent == "B" ) {
 		if ( _firstToMove == Player::UNSET )
 			_firstToMove = Player::BLACK;
@@ -465,7 +496,10 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 		<< "RU[" << _rules << "]" << "SZ[" << _gobanSize << "]";
 	if ( _handicap > 0 )
 		stream_ << "HA[" << _handicap << "]";
-	stream_ << "KM[" << setw( 1 ) << _komi << "]TM[" << _time << ( noNL_ ? "]" : "]\n" )
+	stream_ << "KM[" << setw( 1 ) << _komi << "]";
+	if ( ! _gameName.is_empty() )
+		stream_ << "GN[" << _gameName << "]";
+	stream_ << "TM[" << _time << ( noNL_ ? "]" : "]\n" )
 		<< "PB[" << _blackName << "]PW[" << _whiteName << "]";
 	if ( ! _blackRank.is_empty() )
 		stream_ << ( noNL_ ? "" : "\n" ) << "BR[" << _blackRank << "]";
@@ -473,6 +507,16 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 		stream_ << "WR[" << _whiteRank << "]";
 	if ( ! noNL_ && ! ( _blackRank.is_empty() && _whiteRank.is_empty() ) )
 		stream_ << "\n";
+	if ( ! _date.is_empty() )
+		stream_ << "DT[" << _date << "]";
+	if ( ! _event.is_empty() )
+		stream_ << "EV[" << _event << "]";
+	if ( ! _round.is_empty() )
+		stream_ << "RO[" << _round << "]";
+	if ( ! _source.is_empty() )
+		stream_ << "SO[" << _source << "]";
+	if ( ! _author.is_empty() )
+		stream_ << "AN[" << _author << "]";
 	if ( ! _comment.is_empty() ) {
 		_cache = _comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
@@ -511,6 +555,12 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 			stream_ << setupTag[it->first];
 			for ( Setup::coords_t::const_iterator c( it->second.begin() ), ce( it->second.end() ); c != ce; ++ c )
 				stream_ << "[" << c->data() << "]";
+		}
+	}
+	if ( ! setup._labels.is_empty() ) {
+		stream_ << "LB";
+		for ( Setup::labels_t::const_iterator it( setup._labels.begin() ), end( setup._labels.end() ); it != end; ++ it ) {
+			stream_ << "[" << it->first.data() << ":" << it->second << "]";
 		}
 	}
 	return;
@@ -596,6 +646,20 @@ void SGF::add_position( Position::position_t position_, Coord const& coord_ ) {
 	M_EPILOG
 }
 
+void SGF::add_label( Setup::label_t const& label_ ) {
+	M_PROLOG
+	if ( ! _currentMove ) {
+		_setups.push_back( Setup() );
+		_currentMove = _tree.create_new_root( Move( &_setups.back() ) );
+	} else if ( ! (*_currentMove)->setup() ) {
+		_setups.push_back( Setup() );
+		(*_currentMove)->set_setup( &_setups.back() );
+	}
+	(*_currentMove)->add_label( label_ );
+	return;
+	M_EPILOG
+}
+
 SGF::game_tree_t::node_t SGF::move( game_tree_t::node_t node_, Coord const& coord_ ) {
 	M_PROLOG
 	return ( &*node_->add_node( Move( coord_ ) ) );
@@ -603,6 +667,7 @@ SGF::game_tree_t::node_t SGF::move( game_tree_t::node_t node_, Coord const& coor
 }
 
 void SGF::Move::add_position( Position::position_t position_, Coord const& coord_ ) {
+	M_PROLOG
 	if ( ( position_ == Position::REMOVE )
 			|| ( position_ == Position::BLACK )
 			|| ( position_ == Position::WHITE ) ) {
@@ -611,6 +676,13 @@ void SGF::Move::add_position( Position::position_t position_, Coord const& coord
 		_type = TYPE::SETUP;
 	}
 	_setup->add_position( position_, coord_ );
+	M_EPILOG
+}
+
+void SGF::Move::add_label( Setup::label_t const& label_ ) {
+	M_PROLOG
+	_setup->add_label( label_ );
+	M_EPILOG
 }
 
 void SGF::Move::add_comment( yaal::hcore::HString const& comment_ ) {
@@ -647,6 +719,13 @@ void SGF::Setup::add_position( Position::position_t position_, Coord const& coor
 	coords_t& c( _data[position_] );
 	if ( ( position_ != Position::REMOVE ) || ( find( c.begin(), c.end(), coord_ ) == c.end() ) )
 		c.push_back( coord_ );
+	return;
+	M_EPILOG
+}
+
+void SGF::Setup::add_label( label_t const& label_ ) {
+	M_PROLOG
+	_labels.push_back( label_ );
 	return;
 	M_EPILOG
 }

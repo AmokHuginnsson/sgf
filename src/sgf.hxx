@@ -140,18 +140,23 @@ public:
 	struct Setup {
 		typedef yaal::hcore::HList<Coord> coords_t;
 		typedef yaal::hcore::HMap<Position::position_t, coords_t> setup_t;
+		typedef yaal::hcore::HPair<Coord, yaal::hcore::HString> label_t;
+		typedef yaal::hcore::HList<label_t> labels_t;
 		setup_t _data;
+		labels_t _labels;
 		Setup( void )
-			: _data()
+			: _data(), _labels()
 			{}
 		void swap( Setup& s_ ) {
 			if ( &s_ != this ) {
 				using yaal::swap;
 				swap( _data, s_._data );
+				swap( _labels, s_._labels );
 			}
 		}
 	private:
 		void add_position( Position::position_t, Coord const& );
+		void add_label( label_t const& );
 		friend struct Move;
 	};
 	class Move {
@@ -201,6 +206,7 @@ public:
 		void set_setup( Setup* );
 		void add_comment( yaal::hcore::HString const& );
 		void add_position( Position::position_t, Coord const& );
+		void add_label( Setup::label_t const& );
 		void clear_markers( Position::position_t );
 		int col( void ) const {
 			return ( _coord.col() );
@@ -237,6 +243,12 @@ private:
 	prop_values_t _cachePropValue;
 	game_tree_t::node_t _currentMove;
 	yaal::hcore::HString _app;
+	yaal::hcore::HString _gameName;
+	yaal::hcore::HString _date;
+	yaal::hcore::HString _event;
+	yaal::hcore::HString _round;
+	yaal::hcore::HString _source;
+	yaal::hcore::HString _author;
 	yaal::hcore::HString _rules;
 	yaal::hcore::HString _blackName;
 	yaal::hcore::HString _whiteName;
@@ -261,6 +273,7 @@ public:
 	void move( Coord const& );
 	void clear( void );
 	void add_position( Position::position_t, Coord const& );
+	void add_label( Setup::label_t const& );
 	void set_player( Player::player_t, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
 	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
 	void set_board_size( int );
