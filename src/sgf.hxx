@@ -61,7 +61,8 @@ public:
 			BAD_FILE_FORMAT = 9,
 			MIXED_NODE = 10,
 			DUPLICATED_COORDINATE = 11,
-			MOVE_OUT_OF_RECORD = 12
+			MOVE_OUT_OF_RECORD = 12,
+			MALFORMED_LABEL = 13
 		} code_t;
 	};
 	struct TERM {

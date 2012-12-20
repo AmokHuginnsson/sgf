@@ -55,7 +55,8 @@ char const _errMsg_[][50] = {
 	"Bad file format.",
 	"Cannot mix `move' with `setup' nodes.",
 	"Duplicated coordinate in setup.",
-	"Move not from this record."
+	"Move not from this record.",
+	"Malformed label."
 };
 
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
@@ -433,7 +434,8 @@ void SGF::parse_property( void ) {
 			add_position( tag->second, Coord( *it ) );
 	} else if ( _cachePropIdent == "LB" ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it ) {
-			M_ENSURE( it->find( ":" ) == 2 );
+			if ( it->find( ":" ) != 2 )
+				throw SGFException( _errMsg_[ERROR::MALFORMED_LABEL], static_cast<int>( _cur - _beg ) );
 			_cache.assign( it->raw() + 3, it->get_length() - 3 );
 			add_label( make_pair( Coord( *it ), _cache ) );
 		}
