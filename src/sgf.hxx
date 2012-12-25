@@ -130,10 +130,10 @@ public:
 				swap( *reinterpret_cast<yaal::i16_t*>( _data ), *reinterpret_cast<yaal::i16_t*>( c_._data ) );
 			}
 		}
-		bool operator == ( Coord const& c_ ) {
+		bool operator == ( Coord const& c_ ) const {
 			return ( ( _data[0] == c_._data[0] ) && ( _data[1] == c_._data[1] ) );
 		}
-		bool operator != ( Coord const& c_ ) {
+		bool operator != ( Coord const& c_ ) const {
 			return ( ( _data[0] != c_._data[0] ) || ( _data[1] != c_._data[1] ) );
 		}
 	};
@@ -292,7 +292,6 @@ public:
 	void clear_markers( game_tree_t::const_node_t );
 private:
 	void parse( void );
-	game_tree_t::node_t move( game_tree_t::node_t, Coord const& );
 	void parse_game_tree( void );
 	void parse_sequence( void );
 	void parse_node( void );

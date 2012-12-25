@@ -114,7 +114,16 @@ void SGF::move( Coord const& coord_ ) {
 	M_PROLOG
 	if ( ! _currentMove )
 		_currentMove = _tree.create_new_root();
-	_currentMove = &*_currentMove->add_node( Move( coord_ ) );
+	bool newMove( true );
+	for ( game_tree_t::HNode::iterator it( _currentMove->begin() ), end( _currentMove->end() ); it != end; ++ it ) {
+		if ( (*it)->coord() == coord_ ) {
+			_currentMove = &*it;
+			newMove = false;
+			break;
+		}
+	}
+	if ( newMove )
+		_currentMove = &*_currentMove->add_node( Move( coord_ ) );
 	return;
 	M_EPILOG
 }
@@ -659,12 +668,6 @@ void SGF::add_label( Setup::label_t const& label_ ) {
 	}
 	(*_currentMove)->add_label( label_ );
 	return;
-	M_EPILOG
-}
-
-SGF::game_tree_t::node_t SGF::move( game_tree_t::node_t node_, Coord const& coord_ ) {
-	M_PROLOG
-	return ( &*node_->add_node( Move( coord_ ) ) );
 	M_EPILOG
 }
 
