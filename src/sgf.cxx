@@ -59,6 +59,8 @@ char const _errMsg_[][50] = {
 	"Malformed label."
 };
 
+SGF::Coord const SGF::PASS( "\0\0\0" );
+
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	: _gameType( gameType_ ), _rawData(), _beg( NULL ), _cur( NULL ), _end( NULL ),
 	_cache(), _cachePropIdent(), _cachePropValue(),

@@ -137,6 +137,7 @@ public:
 			return ( ( _data[0] != c_._data[0] ) || ( _data[1] != c_._data[1] ) );
 		}
 	};
+	static Coord const PASS;
 	struct Move;
 	struct Setup {
 		typedef yaal::hcore::HList<Coord> coords_t;
