@@ -66,6 +66,7 @@ SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	_cache(), _cachePropIdent(), _cachePropValue(),
 	_currentMove( NULL ), _app( app_ ), _gameName(), _date(),
 	_event(), _round(), _source(), _author(), _rules( "Japanese" ),
+	_overTime(),
 	_blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
 	_setups(), _tree(), _firstToMove( Player::UNSET ),
 	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
@@ -93,6 +94,7 @@ void SGF::swap( SGF& sgf_ ) {
 		swap( _source, sgf_._source );
 		swap( _author, sgf_._author );
 		swap( _rules, sgf_._rules );
+		swap( _overTime, sgf_._overTime );
 		swap( _blackName, sgf_._blackName );
 		swap( _whiteName, sgf_._whiteName );
 		swap( _blackRank, sgf_._blackRank );
@@ -112,7 +114,42 @@ void SGF::swap( SGF& sgf_ ) {
 	M_EPILOG
 }
 
-void SGF::move( Coord const& coord_ ) {
+void SGF::clear( void ) {
+	M_PROLOG
+	_rawData.clear();
+	_beg = _cur = _end = NULL;
+	_cache.clear();
+	_cachePropIdent.clear();
+	_cachePropValue.clear();
+	_currentMove = NULL;
+	_app.clear();
+	_gameName.clear();
+	_date.clear();
+	_event.clear();
+	_round.clear();
+	_source.clear();
+	_author.clear();
+	_rules.clear();
+	_overTime.clear();
+	_blackName.clear();
+	_blackRank.clear();
+	_whiteName.clear();
+	_whiteRank.clear();
+	_setups.clear();
+	_tree.clear();
+	_firstToMove = Player::UNSET;
+	_gobanSize = 19;
+	_time = 0;
+	_handicap = 0;
+	_komi = 5.5;
+	_result = 0;
+	_place.clear();
+	_comment.clear();
+	return;
+	M_EPILOG
+}
+
+void SGF::move( Coord const& coord_, int time_ ) {
 	M_PROLOG
 	if ( ! _currentMove )
 		_currentMove = _tree.create_new_root();
@@ -126,6 +163,7 @@ void SGF::move( Coord const& coord_ ) {
 	}
 	if ( newMove )
 		_currentMove = &*_currentMove->add_node( Move( coord_ ) );
+	(*_currentMove)->set_time( time_ );
 	return;
 	M_EPILOG
 }
@@ -256,40 +294,6 @@ void SGF::parse( void ) {
 	M_EPILOG
 }
 
-void SGF::clear( void ) {
-	M_PROLOG
-	_rawData.clear();
-	_beg = _cur = _end = NULL;
-	_cache.clear();
-	_cachePropIdent.clear();
-	_cachePropValue.clear();
-	_currentMove = NULL;
-	_app.clear();
-	_gameName.clear();
-	_date.clear();
-	_event.clear();
-	_round.clear();
-	_source.clear();
-	_author.clear();
-	_rules.clear();
-	_blackName.clear();
-	_blackRank.clear();
-	_whiteName.clear();
-	_whiteRank.clear();
-	_setups.clear();
-	_tree.clear();
-	_firstToMove = Player::UNSET;
-	_gobanSize = 19;
-	_time = 0;
-	_handicap = 0;
-	_komi = 5.5;
-	_result = 0;
-	_place.clear();
-	_comment.clear();
-	return;
-	M_EPILOG
-}
-
 void SGF::not_eof( void ) {
 	if ( _cur == _end )
 		throw SGFException( _errMsg_[ERROR::UNEXPECTED_EOF], static_cast<int>( _cur - _beg ) );
@@ -408,6 +412,8 @@ void SGF::parse_property( void ) {
 		_author = singleValue;
 	else if ( _cachePropIdent == "RU" )
 		_rules = singleValue;
+	else if ( _cachePropIdent == "OT" )
+		_overTime = singleValue;
 	else if ( _cachePropIdent == "PB" )
 		_blackName = singleValue;
 	else if ( _cachePropIdent == "PW" )
@@ -463,7 +469,11 @@ void SGF::parse_property( void ) {
 			(*_currentMove)->add_comment( singleValue );
 		else
 			_comment += singleValue;
-	} else
+	} else if ( ( _firstToMove != Player::UNSET ) && ( ( _cachePropIdent == "BL" ) || ( _cachePropIdent == "WL" ) ) )
+		(*_currentMove)->set_time( lexical_cast<int>( singleValue ) );
+	else if ( ( _firstToMove != Player::UNSET ) && ( ( _cachePropIdent == "OB" ) || ( _cachePropIdent == "OW" ) ) )
+		(*_currentMove)->set_time( -lexical_cast<int>( singleValue ) );
+	else
 		clog << "property: `" << _cachePropIdent << "' = `" << singleValue << "'" << endl;
 	return;
 	M_EPILOG
@@ -512,8 +522,10 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	stream_ << "KM[" << setw( 1 ) << _komi << "]";
 	if ( ! _gameName.is_empty() )
 		stream_ << "GN[" << _gameName << "]";
-	stream_ << "TM[" << _time << ( noNL_ ? "]" : "]\n" )
-		<< "PB[" << _blackName << "]PW[" << _whiteName << "]";
+	stream_ << "TM[" << _time;
+	if ( ! _overTime.is_empty() )
+		stream_ << "]OT[" << _overTime;
+	stream_ << ( noNL_ ? "]PB[" : "]\nPB[" ) << _blackName << "]PW[" << _whiteName << "]";
 	if ( ! _blackRank.is_empty() )
 		stream_ << ( noNL_ ? "" : "\n" ) << "BR[" << _blackRank << "]";
 	if ( ! _whiteRank.is_empty() )
@@ -583,6 +595,13 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	stream_ << ( noNL_ ? ";" : "\n;" ) << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord().data() << ']';
+	int time( (*node_)->time() );
+	if ( time != 0 ) {
+		if ( time > 0 )
+			stream_ << ( of_ == Player::BLACK ? "BL[" : "WL[" ) << time << "]";
+		else
+			stream_ << ( of_ == Player::BLACK ? "OB[" : "OW[" ) << -time << "]";
+	}
 	if ( ! (*node_)->comment().is_empty() ) {
 		_cache = (*node_)->comment();
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
@@ -630,6 +649,7 @@ void SGF::Move::swap( Move& move_ ) {
 		swap( _coord, move_._coord );
 		swap( _comment, move_._comment );
 		swap( _setup, move_._setup );
+		swap( _time, move_._time );
 	}
 	return;
 	M_EPILOG
@@ -695,6 +715,13 @@ void SGF::Move::add_label( Setup::label_t const& label_ ) {
 void SGF::Move::add_comment( yaal::hcore::HString const& comment_ ) {
 	M_PROLOG
 	_comment += comment_;
+	return;
+	M_EPILOG
+}
+
+void SGF::Move::set_time( int time_ ) {
+	M_PROLOG
+	_time = time_;
 	return;
 	M_EPILOG
 }

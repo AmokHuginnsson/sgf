@@ -175,24 +175,25 @@ public:
 		Coord _coord;
 		yaal::hcore::HString _comment;
 		Setup* _setup;
+		int _time;
 	public:
 		Move( void )
-			: _type( TYPE::INVALID ), _coord(), _comment(), _setup( NULL )
+			: _type( TYPE::INVALID ), _coord(), _comment(), _setup( NULL ), _time( 0 )
 			{}
 		Move( Setup* setup_ )
-			: _type( TYPE::SETUP ), _coord(), _comment(), _setup( setup_ )
+			: _type( TYPE::SETUP ), _coord(), _comment(), _setup( setup_ ), _time( 0 )
 			{}
 		Move( Coord const& coord_ )
-			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ) {
-		}
+			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ), _time( 0 )
+			{ }
 		Move( char const* const coord_ )
-			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL )
+			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ), _time( 0 )
 			{ }
 		Move( yaal::hcore::HString const& coord_ )
-			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL )
+			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ), _time( 0 )
 			{ }
 		Move( Move const& m_ )
-			: _type( m_._type ), _coord( m_._coord ), _comment( m_._comment ), _setup( m_._setup )
+			: _type( m_._type ), _coord( m_._coord ), _comment( m_._comment ), _setup( m_._setup ), _time( m_._time )
 			{ }
 		Move& operator = ( Move const& m_ ) {
 			if ( &m_ != this ) {
@@ -207,6 +208,7 @@ public:
 		void set_coord( Coord const& );
 		void set_setup( Setup* );
 		void add_comment( yaal::hcore::HString const& );
+		void set_time( int );
 		void add_position( Position::position_t, Coord const& );
 		void add_label( Setup::label_t const& );
 		void clear_markers( Position::position_t );
@@ -227,6 +229,9 @@ public:
 		}
 		Setup const* setup( void ) const {
 			return ( _setup );
+		}
+		int time( void ) const {
+			return ( _time );
 		}
 	};
 	static int const RESIGN = 0xffff;
@@ -252,6 +257,7 @@ private:
 	yaal::hcore::HString _source;
 	yaal::hcore::HString _author;
 	yaal::hcore::HString _rules;
+	yaal::hcore::HString _overTime;
 	yaal::hcore::HString _blackName;
 	yaal::hcore::HString _whiteName;
 	yaal::hcore::HString _blackRank;
@@ -272,7 +278,7 @@ public:
 	void load( yaal::hcore::HStreamInterface& );
 	void load( yaal::hcore::HString const& );
 	void save( yaal::hcore::HStreamInterface&, bool = false );
-	void move( Coord const& );
+	void move( Coord const&, int = 0 );
 	void clear( void );
 	void add_position( Position::position_t, Coord const& );
 	void add_label( Setup::label_t const& );
