@@ -59,10 +59,11 @@ public:
 			NODE_MARK_EXPECTED = 7,
 			BAD_GAME_TYPE = 8,
 			BAD_FILE_FORMAT = 9,
-			MIXED_NODE = 10,
-			DUPLICATED_COORDINATE = 11,
-			MOVE_OUT_OF_RECORD = 12,
-			MALFORMED_LABEL = 13
+			BAD_OVERTIME_DEFINITION = 10,
+			MIXED_NODE = 11,
+			DUPLICATED_COORDINATE = 12,
+			MOVE_OUT_OF_RECORD = 13,
+			MALFORMED_LABEL = 14
 		} code_t;
 	};
 	struct TERM {
@@ -238,6 +239,7 @@ public:
 	static int const TIME = 0x7fff;
 	typedef yaal::hcore::HList<Setup> setups_t;
 	typedef yaal::hcore::HTree<Move> game_tree_t;
+	typedef yaal::hcore::HPair<int, int> byoyomi_t;
 private:
 	GAME_TYPE::game_type_t _gameType;
 	yaal::hcore::HString _rawData;
@@ -283,11 +285,15 @@ public:
 	void add_position( Position::position_t, Coord const& );
 	void add_label( Setup::label_t const& );
 	void set_player( Player::player_t, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
-	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
+	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, int = 0, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
 	void set_board_size( int );
 	void set_komi( double );
 	void set_handicap( int );
 	void set_time( int );
+	void set_overtime( int, int );
+	void set_overtime( yaal::hcore::HString const& );
+	yaal::hcore::HString const& get_overtime( void ) const;
+	byoyomi_t get_byoyomi( void ) const;
 	int get_board_size( void ) const;
 	double get_komi( void ) const;
 	int get_handicap( void ) const;

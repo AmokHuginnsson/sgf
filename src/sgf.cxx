@@ -53,6 +53,7 @@ char const _errMsg_[][50] = {
 	"Expected node start marker sequence.",
 	"Bad game type.",
 	"Bad file format.",
+	"Bad overtime definition.",
 	"Cannot mix `move' with `setup' nodes.",
 	"Duplicated coordinate in setup.",
 	"Move not from this record.",
@@ -181,13 +182,14 @@ void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name
 	M_EPILOG
 }
 
-void SGF::set_info( Player::player_t player_, int gobanSize_, int handicap_, double komi_, int time_, yaal::hcore::HString const& place_ ) {
+void SGF::set_info( Player::player_t player_, int gobanSize_, int handicap_, double komi_, int time_, int byoCount_, int byoTime_, yaal::hcore::HString const& place_ ) {
 	M_PROLOG
 	_firstToMove = player_;
 	set_board_size( gobanSize_ );
 	set_handicap( handicap_ );
 	set_komi( komi_ );
 	set_time( time_ );
+	set_overtime( byoCount_, byoTime_ );
 	_place = place_;
 	return;
 	M_EPILOG
@@ -218,6 +220,49 @@ void SGF::set_time( int time_ ) {
 	M_PROLOG
 	_time = time_;
 	return;
+	M_EPILOG
+}
+
+void SGF::set_overtime( int byoCount_, int byoTime_ ) {
+	M_PROLOG
+	_overTime.format( "%dx%d byo-yomi", byoCount_, byoTime_ );
+	return;
+	M_EPILOG
+}
+
+void SGF::set_overtime( HString const& overTime_ ) {
+	M_PROLOG
+	_overTime = overTime_;
+	return;
+	M_EPILOG
+}
+
+HString const& SGF::get_overtime( void ) const {
+	M_PROLOG
+	return ( _overTime );
+	M_EPILOG
+}
+
+SGF::byoyomi_t SGF::get_byoyomi( void ) const {
+	M_PROLOG
+	byoyomi_t byoyomi;
+	int long byoCountStart( _overTime.find_one_of( _digit_.data() ) );
+	if ( byoCountStart == HString::npos )
+		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 0 );
+	int long byoCountEnd( _overTime.find_other_than( _digit_.data(), byoCountStart ) );
+	if ( byoCountEnd == HString::npos )
+		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 1 );
+	int long byoTimeStart( _overTime.find_one_of( _digit_.data(), byoCountEnd ) );
+	if ( byoTimeStart == HString::npos )
+		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 2 );
+	int long byoTimeEnd( _overTime.find_other_than( _digit_.data(), byoTimeStart ) );
+	try {
+		byoyomi.first = lexical_cast<int>( _overTime.substr( byoCountStart, byoCountEnd - byoCountStart ) );
+		byoyomi.second = lexical_cast<int>( _overTime.substr( byoTimeStart, ( byoTimeEnd != HString::npos ? byoTimeEnd : _overTime.get_length() ) - byoTimeStart ) );
+	} catch ( HLexicalCastException const& ) {
+		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 3 );
+	}
+	return ( byoyomi );
 	M_EPILOG
 }
 
