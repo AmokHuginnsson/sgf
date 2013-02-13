@@ -246,21 +246,23 @@ HString const& SGF::get_overtime( void ) const {
 SGF::byoyomi_t SGF::get_byoyomi( void ) const {
 	M_PROLOG
 	byoyomi_t byoyomi;
-	int long byoCountStart( _overTime.find_one_of( _digit_.data() ) );
-	if ( byoCountStart == HString::npos )
-		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 0 );
-	int long byoCountEnd( _overTime.find_other_than( _digit_.data(), byoCountStart ) );
-	if ( byoCountEnd == HString::npos )
-		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 1 );
-	int long byoTimeStart( _overTime.find_one_of( _digit_.data(), byoCountEnd ) );
-	if ( byoTimeStart == HString::npos )
-		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 2 );
-	int long byoTimeEnd( _overTime.find_other_than( _digit_.data(), byoTimeStart ) );
-	try {
-		byoyomi.first = lexical_cast<int>( _overTime.substr( byoCountStart, byoCountEnd - byoCountStart ) );
-		byoyomi.second = lexical_cast<int>( _overTime.substr( byoTimeStart, ( byoTimeEnd != HString::npos ? byoTimeEnd : _overTime.get_length() ) - byoTimeStart ) );
-	} catch ( HLexicalCastException const& ) {
-		throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 3 );
+	if ( ! _overTime.is_empty() ) {
+		int long byoCountStart( _overTime.find_one_of( _digit_.data() ) );
+		if ( byoCountStart == HString::npos )
+			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 0 );
+		int long byoCountEnd( _overTime.find_other_than( _digit_.data(), byoCountStart ) );
+		if ( byoCountEnd == HString::npos )
+			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 1 );
+		int long byoTimeStart( _overTime.find_one_of( _digit_.data(), byoCountEnd ) );
+		if ( byoTimeStart == HString::npos )
+			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 2 );
+		int long byoTimeEnd( _overTime.find_other_than( _digit_.data(), byoTimeStart ) );
+		try {
+			byoyomi.first = lexical_cast<int>( _overTime.substr( byoCountStart, byoCountEnd - byoCountStart ) );
+			byoyomi.second = lexical_cast<int>( _overTime.substr( byoTimeStart, ( byoTimeEnd != HString::npos ? byoTimeEnd : _overTime.get_length() ) - byoTimeStart ) );
+		} catch ( HLexicalCastException const& ) {
+			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 3 );
+		}
 	}
 	return ( byoyomi );
 	M_EPILOG
