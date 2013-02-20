@@ -57,7 +57,8 @@ char const _errMsg_[][50] = {
 	"Cannot mix `move' with `setup' nodes.",
 	"Duplicated coordinate in setup.",
 	"Move not from this record.",
-	"Malformed label."
+	"Malformed label.",
+	"Inconsistent first move."
 };
 
 SGF::Coord const SGF::PASS( "\0\0\0" );
@@ -67,9 +68,8 @@ SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	_cache(), _cachePropIdent(), _cachePropValue(),
 	_currentMove( NULL ), _app( app_ ), _gameName(), _date(),
 	_event(), _round(), _source(), _author(), _rules( "Japanese" ),
-	_overTime(),
-	_blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
-	_setups(), _tree(), _firstToMove( Player::UNSET ),
+	_overTime(), _blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
+	_setups(), _tree(),
 	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
 	_result( 0 ), _place(), _comment() {
 }
@@ -102,7 +102,6 @@ void SGF::swap( SGF& sgf_ ) {
 		swap( _whiteRank, sgf_._whiteRank );
 		swap( _setups, sgf_._setups );
 		swap( _tree, sgf_._tree );
-		swap( _firstToMove, sgf_._firstToMove );
 		swap( _gobanSize, sgf_._gobanSize );
 		swap( _time, sgf_._time );
 		swap( _handicap, sgf_._handicap );
@@ -122,7 +121,6 @@ void SGF::clear( void ) {
 	_cache.clear();
 	_cachePropIdent.clear();
 	_cachePropValue.clear();
-	_currentMove = NULL;
 	_app.clear();
 	_gameName.clear();
 	_date.clear();
@@ -136,9 +134,7 @@ void SGF::clear( void ) {
 	_blackRank.clear();
 	_whiteName.clear();
 	_whiteRank.clear();
-	_setups.clear();
-	_tree.clear();
-	_firstToMove = Player::UNSET;
+	clear_game();
 	_gobanSize = 19;
 	_time = 0;
 	_handicap = 0;
@@ -147,6 +143,21 @@ void SGF::clear( void ) {
 	_place.clear();
 	_comment.clear();
 	return;
+	M_EPILOG
+}
+
+void SGF::clear_game( void ) {
+	M_PROLOG
+	_currentMove = NULL;
+	_setups.clear();
+	_tree.clear();
+	return;
+	M_EPILOG
+}
+
+SGF::Player::player_t SGF::first_to_move( void ) const {
+	M_PROLOG
+	return ( _handicap > 1 ? Player::WHITE : Player::BLACK );
 	M_EPILOG
 }
 
@@ -182,9 +193,8 @@ void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name
 	M_EPILOG
 }
 
-void SGF::set_info( Player::player_t player_, int gobanSize_, int handicap_, double komi_, int time_, int byoCount_, int byoTime_, yaal::hcore::HString const& place_ ) {
+void SGF::set_info( int gobanSize_, int handicap_, double komi_, int time_, int byoCount_, int byoTime_, yaal::hcore::HString const& place_ ) {
 	M_PROLOG
-	_firstToMove = player_;
 	set_board_size( gobanSize_ );
 	set_handicap( handicap_ );
 	set_komi( komi_ );
@@ -197,6 +207,7 @@ void SGF::set_info( Player::player_t player_, int gobanSize_, int handicap_, dou
 
 void SGF::set_board_size( int gobanSize_ ) {
 	M_PROLOG
+	clear_game();
 	_gobanSize = gobanSize_;
 	return;
 	M_EPILOG
@@ -211,6 +222,7 @@ void SGF::set_komi( double komi_ ) {
 
 void SGF::set_handicap( int handicap_ ) {
 	M_PROLOG
+	clear_game();
 	_handicap = handicap_;
 	return;
 	M_EPILOG
@@ -424,6 +436,12 @@ position_tag_dict_t const _positionTagDict_ = sequence<HString>( "AE", SGF::Posi
 
 }
 
+bool SGF::is_first_move( void ) const {
+	M_PROLOG
+	return ( _currentMove->get_parent() == _tree.get_root() );
+	M_EPILOG
+}
+
 void SGF::parse_property( void ) {
 	M_PROLOG
 	_cachePropIdent = parse_property_ident();
@@ -504,21 +522,21 @@ void SGF::parse_property( void ) {
 			add_label( make_pair( Coord( *it ), _cache ) );
 		}
 	} else if ( _cachePropIdent == "B" ) {
-		if ( _firstToMove == Player::UNSET )
-			_firstToMove = Player::BLACK;
+		if ( is_first_move() && ( first_to_move() != Player::BLACK ) )
+			throw SGFException( _errMsg_[ERROR::INCONSISTENT_FIRST_MOVE], static_cast<int>( _cur - _beg ) );
 		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "W" ) {
-		if ( _firstToMove == Player::UNSET )
-			_firstToMove = Player::WHITE;
+		if ( is_first_move() && ( first_to_move() != Player::WHITE ) )
+			throw SGFException( _errMsg_[ERROR::INCONSISTENT_FIRST_MOVE], static_cast<int>( _cur - _beg ) );
 		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "C" ) {
-		if ( _firstToMove != Player::UNSET )
+		if ( _currentMove && ( _currentMove != _tree.get_root() ) )
 			(*_currentMove)->add_comment( singleValue );
 		else
 			_comment += singleValue;
-	} else if ( ( _firstToMove != Player::UNSET ) && ( ( _cachePropIdent == "BL" ) || ( _cachePropIdent == "WL" ) ) )
+	} else if ( ( _currentMove && ( _currentMove != _tree.get_root() ) ) && ( ( _cachePropIdent == "BL" ) || ( _cachePropIdent == "WL" ) ) )
 		(*_currentMove)->set_time( lexical_cast<int>( singleValue ) );
-	else if ( ( _firstToMove != Player::UNSET ) && ( ( _cachePropIdent == "OB" ) || ( _cachePropIdent == "OW" ) ) )
+	else if ( ( _currentMove && ( _currentMove != _tree.get_root() ) ) && ( ( _cachePropIdent == "OB" ) || ( _cachePropIdent == "OW" ) ) )
 		(*_currentMove)->set_time( -lexical_cast<int>( singleValue ) );
 	else
 		clog << "property: `" << _cachePropIdent << "' = `" << singleValue << "'" << endl;
@@ -598,7 +616,7 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 		game_tree_t::const_node_t root( _tree.get_root() );
 		if ( (*root)->setup() )
 			save_setup( root, stream_, noNL_ );
-		save_variations( _firstToMove, root, stream_, noNL_ );
+		save_variations( first_to_move(), root, stream_, noNL_ );
 	}
 	stream_ << ( noNL_ ? ")" : ")\n" );
 	return;

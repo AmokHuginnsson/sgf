@@ -63,7 +63,8 @@ public:
 			MIXED_NODE = 11,
 			DUPLICATED_COORDINATE = 12,
 			MOVE_OUT_OF_RECORD = 13,
-			MALFORMED_LABEL = 14
+			MALFORMED_LABEL = 14,
+			INCONSISTENT_FIRST_MOVE = 15
 		} code_t;
 	};
 	struct TERM {
@@ -77,8 +78,7 @@ public:
 	struct Player {
 		typedef enum {
 			BLACK,
-			WHITE,
-			UNSET
+			WHITE
 		} player_t;
 	};
 	struct Position {
@@ -266,7 +266,6 @@ private:
 	yaal::hcore::HString _whiteRank;
 	setups_t _setups;
 	game_tree_t _tree;
-	Player::player_t _firstToMove;
 	int _gobanSize;
 	int _time;
 	int _handicap;
@@ -285,7 +284,7 @@ public:
 	void add_position( Position::position_t, Coord const& );
 	void add_label( Setup::label_t const& );
 	void set_player( Player::player_t, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
-	void set_info( Player::player_t, int = 19, int = 0, double = 5.5, int = 0, int = 0, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
+	void set_info( int = 19, int = 0, double = 5.5, int = 0, int = 0, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
 	void set_board_size( int );
 	void set_komi( double );
 	void set_handicap( int );
@@ -304,6 +303,9 @@ public:
 	void set_current_move( game_tree_t::const_node_t );
 	void clear_markers( game_tree_t::const_node_t );
 private:
+	void clear_game( void );
+	bool is_first_move( void ) const;
+	Player::player_t first_to_move( void ) const;
 	void parse( void );
 	void parse_game_tree( void );
 	void parse_sequence( void );
