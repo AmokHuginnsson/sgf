@@ -659,6 +659,15 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 
 void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
+	/*
+	 * Pass move has two forms:
+	 *
+	 * B[]   - FF4 format
+	 * B[tt] - FF3 format
+	 *
+	 * Internally we keep pass moves as SGF::PASS == \0 \0 \0 which automatically gets
+	 * correct FF4 form if saved with Coord::data() access.
+	 */
 	stream_ << ( noNL_ ? ";" : "\n;" ) << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord().data() << ']';
 	int time( (*node_)->time() );
 	if ( time != 0 ) {
