@@ -32,7 +32,7 @@ Copyright:
 #include <yaal/hcore/hcore.hxx>
 #include <yaal/tools/tools.hxx>
 #include <yaal/tools/assign.hxx>
-M_VCSID( "$Id: "__ID__" $" )
+M_VCSID( "$Id: " __ID__ " $" )
 #include "sgf.hxx"
 #include "config.hxx"
 
