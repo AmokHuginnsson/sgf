@@ -25,28 +25,32 @@
 # FITNESS FOR A PARTICULAR PURPOSE. Use it at your own risk.
 
 $(foreach DIR,$(subst /, ,$(CURDIR)), $(eval $(eval DIR_ROOT_TEST=$(DIR_ROOT_TEST)/$(DIR)) $(if $(wildcard $(DIR_ROOT_TEST)/Makefile.mk.in),export DIR_ROOT ?= $(DIR_ROOT_TEST))))
-PRJNAME      = sgf
-LIB_NAME     = $(PRJNAME)
-VERSION      = 0
-SUBVERSION   = 0
-EXTRAVERSION = 0
-LIB_VERSION  = $(VERSION).$(SUBVERSION).$(EXTRAVERSION)
-LIB_SRC      = src
-prefix       = @prefix@
-exec_prefix  = @exec_prefix@
-DIR_SYSCONF  = $(DESTDIR)@sysconfdir@
-DIR_LIB      = $(DESTDIR)@libdir@
-DIR_HEADERS  = $(DESTDIR)@includedir@
-DIR_SHARE    = $(DESTDIR)@datarootdir@
-LIB_PREFIX   = @LIB_PREFIX@
-MKDIR_P      = @MKDIR_P@
-INSTALL      = @INSTALL@
-RANLIB       = @RANLIB@
-GITID        = @GITID@
-CTAGS        = @CTAGS@
-DIRS         = $(DIR_BUILD)
-HAPI_HEADER  = include/$(LIB_NAME)/$(LIB_NAME).hxx
-LD_SO_CONF   = $(DIR_LIB)/ld.so.conf
+PRJNAME        = sgf
+LIB_NAME       = $(PRJNAME)
+VERSION        = 0
+SUBVERSION     = 0
+EXTRAVERSION   = 0
+LIB_VERSION    = $(VERSION).$(SUBVERSION).$(EXTRAVERSION)
+LIB_SRC        = src
+prefix         = @prefix@
+exec_prefix    = @exec_prefix@
+DIR_SYSCONF    = $(DESTDIR)@sysconfdir@
+DIR_BIN        = $(DESTDIR)@bindir@
+DIR_LIB        = $(DESTDIR)@libdir@
+DIR_LOCALSTATE = $(DESTDIR)@localstatedir@
+DIR_HEADERS    = $(DESTDIR)@includedir@
+DIR_SHARE      = $(DESTDIR)@datarootdir@
+LIB_PREFIX     = @LIB_PREFIX@
+CXX            = @CXX@
+MKDIR_P        = @MKDIR_P@
+INSTALL        = @INSTALL@
+RANLIB         = @RANLIB@
+GITID          = @GITID@
+CTAGS          = @CTAGS@
+GTAGS          = @GTAGS@
+DIRS           = $(DIR_BUILD)
+HAPI_HEADER    = include/$(LIB_NAME)/$(LIB_NAME).hxx
+LD_SO_CONF     = $(DIR_LIB)/ld.so.conf
 DO_@DO_TARGET@=1
 override CXX_STANDARD=@CXX_STANDARD@
 include $(DIR_ROOT)/_aux/mk/1_basic.mk
