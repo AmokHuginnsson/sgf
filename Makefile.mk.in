@@ -58,6 +58,7 @@ include $(DIR_ROOT)/_aux/mk/2_term.mk
 include $(DIR_ROOT)/_aux/mk/3_suffix.mk
 include $(DIR_ROOT)/_aux/mk/4_wrapper.mk
 include $(DIR_ROOT)/_aux/mk/5_flags.mk
+EXTRA_COMPILER_OPTIMIZATION_FLAGS=@EXTRA_COMPILER_OPTIMIZATION_FLAGS@
 override CXXFLAGS+= @EXTRA_CXXFLAGS@ @DEFS@ \
 					-I$(DIR_ROOT) -I$(DIR_BUILD) -I/usr/local/include
 override LXXFLAGS+= -L. -L/usr/local/lib -shared @EXTRA_LXXFLAGS@ @YAAL_LXXFLAGS@
