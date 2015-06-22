@@ -1,7 +1,7 @@
 /*
 ---           `sgf' 0.0.0 (c) 1978 by Marcin 'Amok' Konarski            ---
 
-	sgf.hxx - this file is integral part of `sgf' project.
+  sgf.hxx - this file is integral part of `sgf' project.
 
   i.  You may not make any changes in Copyright information.
   ii. You must attach Copyright information to any part of every copy

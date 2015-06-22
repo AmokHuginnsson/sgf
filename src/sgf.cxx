@@ -1,7 +1,7 @@
 /*
 ---           `sgf' 0.0.0 (c) 1978 by Marcin 'Amok' Konarski            ---
 
-	sgf.cxx - this file is integral part of `sgf' project.
+  sgf.cxx - this file is integral part of `sgf' project.
 
   i.  You may not make any changes in Copyright information.
   ii. You must attach Copyright information to any part of every copy
@@ -305,8 +305,9 @@ int SGF::get_time( void ) const {
 
 char const* non_space( char const* first, char const* last ) {
 	for ( ; first != last ; ++ first ) {
-		if ( ! ::memchr( _whiteSpace_.data(), *first, _whiteSpace_.size() ) )
+		if ( ! ::memchr( _whiteSpace_.data(), *first, static_cast<int unsigned>( _whiteSpace_.size() ) ) ) {
 			break;
+		}
 	}
 	return ( first );
 }
