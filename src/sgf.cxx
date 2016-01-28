@@ -26,6 +26,7 @@ Copyright:
 
 #include <cctype>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 
 #include <yaal/hcore/hfile.hxx>
