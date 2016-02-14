@@ -33,6 +33,7 @@ Copyright:
 #include <yaal/hcore/hcore.hxx>
 #include <yaal/tools/tools.hxx>
 #include <yaal/tools/assign.hxx>
+#include <yaal/tools/stringalgo.hxx>
 M_VCSID( "$Id: " __ID__ " $" )
 #include "sgf.hxx"
 #include "config.hxx"
@@ -65,14 +66,41 @@ char const _errMsg_[][50] = {
 SGF::Coord const SGF::PASS( "\0\0\0" );
 
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
-	: _gameType( gameType_ ), _rawData(), _beg( NULL ), _cur( NULL ), _end( NULL ),
-	_cache(), _cachePropIdent(), _cachePropValue(),
-	_currentMove( NULL ), _app( app_ ), _gameName(), _date(),
-	_event(), _round(), _source(), _author(), _rules( "Japanese" ),
-	_overTime(), _blackName(), _whiteName(), _blackRank( "30k" ), _whiteRank( "30k" ),
-	_setups(), _tree(),
-	_gobanSize( 19 ), _time( 0 ), _handicap( 0 ), _komi( 5.5 ),
-	_result( 0 ), _place(), _comment() {
+	: _gameType( gameType_ )
+	, _rawData()
+	, _beg( NULL )
+	, _cur( NULL )
+	, _end( NULL )
+	, _cache()
+	, _cachePropIdent()
+	, _cachePropValue()
+	, _currentMove( NULL )
+	, _app( app_ )
+	, _charset()
+	, _gameName()
+	, _date()
+	, _event()
+	, _round()
+	, _source()
+	, _creator()
+	, _annotator()
+	, _rules( "Japanese" )
+	, _overTime()
+	, _blackName()
+	, _whiteName()
+	, _blackRank( "30k" )
+	, _whiteRank( "30k" )
+	, _blackCountry()
+	, _whiteCountry()
+	, _setups()
+	, _tree()
+	, _gobanSize( DEFAULT::SIZE )
+	, _time( 0 )
+	, _handicap( 0 )
+	, _komi100( DEFAULT::KOMI )
+	, _result( 0 )
+	, _place()
+	, _comment() {
 }
 
 void SGF::swap( SGF& sgf_ ) {
@@ -89,24 +117,28 @@ void SGF::swap( SGF& sgf_ ) {
 		swap( _cachePropValue, sgf_._cachePropValue );
 		swap( _currentMove, sgf_._currentMove );
 		swap( _app, sgf_._app );
+		swap( _charset, sgf_._charset );
 		swap( _gameName, sgf_._gameName );
 		swap( _date, sgf_._date );
 		swap( _event, sgf_._event );
 		swap( _round, sgf_._round );
 		swap( _source, sgf_._source );
-		swap( _author, sgf_._author );
+		swap( _creator, sgf_._creator );
+		swap( _annotator, sgf_._annotator );
 		swap( _rules, sgf_._rules );
 		swap( _overTime, sgf_._overTime );
 		swap( _blackName, sgf_._blackName );
 		swap( _whiteName, sgf_._whiteName );
 		swap( _blackRank, sgf_._blackRank );
 		swap( _whiteRank, sgf_._whiteRank );
+		swap( _blackCountry, sgf_._blackCountry );
+		swap( _whiteCountry, sgf_._whiteCountry );
 		swap( _setups, sgf_._setups );
 		swap( _tree, sgf_._tree );
 		swap( _gobanSize, sgf_._gobanSize );
 		swap( _time, sgf_._time );
 		swap( _handicap, sgf_._handicap );
-		swap( _komi, sgf_._komi );
+		swap( _komi100, sgf_._komi100 );
 		swap( _result, sgf_._result );
 		swap( _place, sgf_._place );
 		swap( _comment, sgf_._comment );
@@ -123,23 +155,27 @@ void SGF::clear( void ) {
 	_cachePropIdent.clear();
 	_cachePropValue.clear();
 	_app.clear();
+	_charset.clear();
 	_gameName.clear();
 	_date.clear();
 	_event.clear();
 	_round.clear();
 	_source.clear();
-	_author.clear();
+	_creator.clear();
+	_annotator.clear();
 	_rules.clear();
 	_overTime.clear();
 	_blackName.clear();
 	_blackRank.clear();
 	_whiteName.clear();
 	_whiteRank.clear();
+	_blackCountry.clear();
+	_blackCountry.clear();
 	clear_game();
-	_gobanSize = 19;
+	_gobanSize = DEFAULT::SIZE;
 	_time = 0;
 	_handicap = 0;
-	_komi = 5.5;
+	_komi100 = DEFAULT::KOMI;
 	_result = 0;
 	_place.clear();
 	_comment.clear();
@@ -194,11 +230,11 @@ void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name
 	M_EPILOG
 }
 
-void SGF::set_info( int gobanSize_, int handicap_, double komi_, int time_, int byoCount_, int byoTime_, yaal::hcore::HString const& place_ ) {
+void SGF::set_info( int gobanSize_, int handicap_, int komi100_, int time_, int byoCount_, int byoTime_, yaal::hcore::HString const& place_ ) {
 	M_PROLOG
 	set_board_size( gobanSize_ );
 	set_handicap( handicap_ );
-	set_komi( komi_ );
+	set_komi100( komi100_ );
 	set_time( time_ );
 	set_overtime( byoCount_, byoTime_ );
 	_place = place_;
@@ -214,9 +250,9 @@ void SGF::set_board_size( int gobanSize_ ) {
 	M_EPILOG
 }
 
-void SGF::set_komi( double komi_ ) {
+void SGF::set_komi100( int komi100_ ) {
 	M_PROLOG
-	_komi = komi_;
+	_komi100 = komi100_;
 	return;
 	M_EPILOG
 }
@@ -256,6 +292,27 @@ HString const& SGF::get_overtime( void ) const {
 	M_EPILOG
 }
 
+yaal::hcore::HString SGF::get_result( void ) const {
+	M_PROLOG
+	HString result( _result > 0 ? "B+" : "W+" );
+	int res( abs( _result ) );
+	if ( res == TIME ) {
+		result.append( "T" );
+	} else if ( res == RESIGN ) {
+		result.append( "R" );
+	} else {
+		result.append( res );
+		if ( ( _komi100 % 100 ) != 0 ) {
+			int komi( _komi100 % 100 );
+			result.append( "." ).append( komi % 10 ? komi : komi / 10 );
+		} else if ( _result == 0 ) {
+			result.clear();
+		}
+	}
+	return ( result );
+	M_EPILOG
+}
+
 SGF::byoyomi_t SGF::get_byoyomi( void ) const {
 	M_PROLOG
 	byoyomi_t byoyomi;
@@ -292,8 +349,8 @@ int SGF::get_board_size( void ) const {
 	return ( _gobanSize );
 }
 
-double SGF::get_komi( void ) const {
-	return ( _komi );
+int SGF::get_komi100( void ) const {
+	return ( _komi100 );
 }
 
 int SGF::get_handicap( void ) const {
@@ -319,8 +376,9 @@ void SGF::load( HStreamInterface& stream_ ) {
 	HChunk buffer( BUFFER_SIZE );
 	int nRead( 0 );
 	clear();
-	while ( ( nRead = static_cast<int>( stream_.read( buffer.raw(), BUFFER_SIZE ) ) ) > 0 )
+	while ( ( nRead = static_cast<int>( stream_.read( buffer.raw(), BUFFER_SIZE ) ) ) > 0 ) {
 		_rawData.append( buffer.get<char>(), nRead );
+	}
 	parse();
 	return;
 	M_EPILOG
@@ -344,11 +402,13 @@ void SGF::parse( void ) {
 	_cur = non_space( _cur, _end );
 	try {
 		parse_game_tree();
-		while ( _cur != _end )
+		while ( _cur != _end ) {
 			parse_game_tree();
+		}
 	} catch ( SGFException const& e ) {
-		if ( _cur != _end )
+		if ( _cur != _end ) {
 			cerr << "Failed at byte: " << ( _cur - _beg ) << " (`" << *_cur << "')" << endl;
+		}
 		throw;
 	}
 	return;
@@ -356,20 +416,23 @@ void SGF::parse( void ) {
 }
 
 void SGF::not_eof( void ) {
-	if ( _cur == _end )
+	if ( _cur == _end ) {
 		throw SGFException( _errMsg_[ERROR::UNEXPECTED_EOF], static_cast<int>( _cur - _beg ) );
+	}
 	return;
 }
 
 void SGF::parse_game_tree( void ) {
 	M_PROLOG
 	not_eof();
-	if ( *_cur != TERM::GT_OPEN )
+	if ( *_cur != TERM::GT_OPEN ) {
 		throw SGFException( _errMsg_[ERROR::GT_OPEN_EXPECTED], static_cast<int>( _cur - _beg ) );
+	}
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
-	if ( ! _currentMove )
+	if ( ! _currentMove ) {
 		_currentMove = _tree.create_new_root();
+	}
 	parse_sequence();
 	game_tree_t::node_t preVariationMove( _currentMove );
 	while ( ( _cur != _end ) && ( *_cur != TERM::GT_CLOSE ) ) {
@@ -377,8 +440,9 @@ void SGF::parse_game_tree( void ) {
 		parse_game_tree();
 		not_eof();
 	}
-	if ( *_cur != TERM::GT_CLOSE )
+	if ( *_cur != TERM::GT_CLOSE ) {
 		throw SGFException( _errMsg_[ERROR::GT_CLOSE_EXPECTED], static_cast<int>( _cur - _beg ) );
+	}
 	_cur = non_space( ++ _cur, _end );
 	return;
 	M_EPILOG
@@ -391,9 +455,9 @@ void SGF::parse_sequence( void ) {
 		_cur = non_space( _cur, _end );
 		not_eof();
 		while ( *_cur == TERM::NODE_MARK ) {
-			if ( ( _currentMove == _tree.get_root() ) || ( (*_currentMove)->type() != Move::TYPE::INVALID ) )
+			if ( ( _currentMove == _tree.get_root() ) || ( (*_currentMove)->type() != Move::TYPE::INVALID ) ) {
 				_currentMove = &*_currentMove->add_node();
-			else {
+			} else {
 				_cur = non_space( _cur, _end );
 				not_eof();
 				clog << "Empty node!" << endl;
@@ -409,8 +473,9 @@ void SGF::parse_sequence( void ) {
 
 void SGF::parse_node( void ) {
 	M_PROLOG
-	if ( *_cur != TERM::NODE_MARK )
+	if ( *_cur != TERM::NODE_MARK ) {
 		throw SGFException( _errMsg_[ERROR::NODE_MARK_EXPECTED], static_cast<int>( _cur - _beg ) );
+	}
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
 	while ( ( *_cur != TERM::GT_CLOSE ) && ( *_cur != TERM::GT_OPEN ) && ( *_cur != TERM::NODE_MARK ) ) {
@@ -435,6 +500,36 @@ position_tag_dict_t const _positionTagDict_ = sequence<HString>( "AE", SGF::Posi
 	( "MA", SGF::Position::MARK )
 	( "TB", SGF::Position::BLACK_TERITORY )
 	( "TW", SGF::Position::WHITE_TERITORY );
+
+int parse_time( yaal::hcore::HString const& time_, int pos_ ) {
+	M_PROLOG
+	int time( 0 );
+	HString numStr;
+	for ( int i = 0, C = static_cast<int>( time_.get_length() ); i < C; ++ i ) {
+		if ( isdigit( time_[i] ) ) {
+			numStr.append( time_[i] );
+		} else if ( ! numStr.is_empty() ) {
+			char unit( static_cast<char>( tolower( time_[i] ) ) );
+			if ( unit == 'h' ) {
+				time += ( lexical_cast<int>( numStr ) * 3600 );
+			} else if ( unit == 'm' ) {
+				time += ( lexical_cast<int>( numStr ) * 60 );
+			} else if ( unit == 's' ) {
+				time += lexical_cast<int>( numStr );
+			} else if ( isspace( unit ) ) {
+				continue;
+			} else {
+				throw SGFException( "Bad time: ", pos_ + i );
+			}
+			numStr.clear();
+		}
+	}
+	if ( ! numStr.is_empty() ) {
+		time += lexical_cast<int>( numStr );
+	}
+	return ( time );
+	M_EPILOG
+}
 
 }
 
@@ -463,55 +558,75 @@ void SGF::parse_property( void ) {
 		int ff( lexical_cast<int>( singleValue ) );
 		if ( ( ff < 1 ) || ( ff > 4 ) )
 			throw SGFException( _errMsg_[ERROR::BAD_FILE_FORMAT], static_cast<int>( _cur - _beg ) );
-	} else if ( _cachePropIdent == "AP" )
+	} else if ( _cachePropIdent == "AP" ) {
 		_app = singleValue;
-	else if ( _cachePropIdent == "GN" )
+	} else if ( _cachePropIdent == "CA" ) {
+		_charset = singleValue;
+	} else if ( _cachePropIdent == "GN" ) {
 		_gameName = singleValue;
-	else if ( _cachePropIdent == "DT" )
+	} else if ( _cachePropIdent == "DT" ) {
 		_date = singleValue;
-	else if ( _cachePropIdent == "EV" )
+	} else if ( _cachePropIdent == "EV" ) {
 		_event = singleValue;
-	else if ( _cachePropIdent == "RO" )
+	} else if ( _cachePropIdent == "RO" ) {
 		_round = singleValue;
-	else if ( _cachePropIdent == "SO" )
+	} else if ( _cachePropIdent == "SO" ) {
 		_source = singleValue;
-	else if ( _cachePropIdent == "AN" )
-		_author = singleValue;
-	else if ( _cachePropIdent == "RU" )
+	} else if ( _cachePropIdent == "US" ) {
+		_creator = singleValue;
+	} else if ( _cachePropIdent == "AN" ) {
+		_annotator = singleValue;
+	} else if ( _cachePropIdent == "RU" ) {
 		_rules = singleValue;
-	else if ( _cachePropIdent == "OT" )
+	} else if ( _cachePropIdent == "OT" ) {
 		_overTime = singleValue;
-	else if ( _cachePropIdent == "PB" )
+	} else if ( _cachePropIdent == "PB" ) {
 		_blackName = singleValue;
-	else if ( _cachePropIdent == "PW" )
+	} else if ( _cachePropIdent == "PW" ) {
 		_whiteName = singleValue;
-	else if ( _cachePropIdent == "BR" )
+	} else if ( _cachePropIdent == "BR" ) {
 		_blackRank = singleValue;
-	else if ( _cachePropIdent == "WR" )
+	} else if ( _cachePropIdent == "WR" ) {
 		_whiteRank = singleValue;
-	else if ( _cachePropIdent == "KM" )
-		_komi = lexical_cast<double>( singleValue );
-	else if ( _cachePropIdent == "HA" )
-		_handicap = lexical_cast<int>( singleValue );
-	else if ( _cachePropIdent == "SZ" )
-		_gobanSize = lexical_cast<int>( singleValue );
-	else if ( _cachePropIdent == "TM" )
-		_time = lexical_cast<int>( singleValue );
-	else if ( _cachePropIdent == "PC" )
-		_place = singleValue;
-	else if ( _cachePropIdent == "RE" ) {
-		if ( isdigit( singleValue[2] ) )
-			_result = lexical_cast<int>( singleValue.raw() + 2 );
-		else {
-			char r( static_cast<char>( toupper( singleValue[2] ) ) );
-			if ( r == 'R' )
-				_result = RESIGN;
-			else if ( r == 'T' )
-				_result = TIME;
+	} else if ( _cachePropIdent == "BC" ) {
+		_blackCountry = singleValue;
+	} else if ( _cachePropIdent == "WC" ) {
+		_whiteCountry = singleValue;
+	} else if ( _cachePropIdent == "KM" ) {
+		typedef HArray<HString> strings_t;
+		strings_t komiStr( string::split<strings_t>( singleValue, "." ) );
+		_komi100 = lexical_cast<int>( komiStr[0] ) * 100;
+		if ( komiStr.get_size() > 1 ) {
+			_komi100 += lexical_cast<int>( komiStr[1] );
 		}
-		char player( static_cast<char>( toupper( singleValue[0] ) ) );
-		if ( player == 'W' )
-			_result = _result;
+	} else if ( _cachePropIdent == "HA" ) {
+		_handicap = lexical_cast<int>( singleValue );
+	} else if ( _cachePropIdent == "SZ" ) {
+		_gobanSize = lexical_cast<int>( singleValue );
+	} else if ( _cachePropIdent == "TM" ) {
+		_time = parse_time( singleValue, static_cast<int>( _cur - _beg ) );
+	} else if ( _cachePropIdent == "PC" ) {
+		_place = singleValue;
+	} else if ( _cachePropIdent == "RE" ) {
+		if ( singleValue.get_length() > 0 ) {
+			if ( ! singleValue.is_empty() ) {
+				if ( isdigit( singleValue[2] ) ) {
+					_result = lexical_cast<int>( singleValue.raw() + 2 );
+				} else {
+					char r( static_cast<char>( toupper( singleValue[2] ) ) );
+					if ( r == 'R' )
+						_result = RESIGN;
+					else if ( r == 'T' )
+						_result = TIME;
+				}
+			} else {
+				_result = RESIGN;
+			}
+			char player( static_cast<char>( toupper( singleValue[0] ) ) );
+			if ( player == 'W' ) {
+				_result = -_result;
+			}
+		}
 	} else if ( _positionTagDict_.find( _cachePropIdent ) != _positionTagDict_.end() ) {
 		position_tag_dict_t::const_iterator tag( _positionTagDict_.find( _cachePropIdent ) );
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
@@ -580,35 +695,54 @@ void SGF::parse_property_value( prop_values_t& values_ ) {
 	M_EPILOG
 }
 
+namespace {
+void dump_tag( HStreamInterface& stream_, char const* tag_, yaal::hcore::HString const& value_ ) {
+	if ( ! value_.is_empty() ) {
+		stream_ << tag_ << "[" << value_ << "]";
+	}
+}
+}
+
 void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
-	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << ( noNL_ ? "]" : "]\n" )
-		<< "RU[" << _rules << "]" << "SZ[" << _gobanSize << "]";
-	if ( _handicap > 0 )
+	char const* const nl = noNL_ ? "" : "\n";
+	stream_ << "(;GM[" << static_cast<int>( _gameType ) << "]FF[4]AP[" << _app << "]" << nl;
+	if ( ! _charset.is_empty() ) {
+		stream_ << "CA[" << _charset << "]";
+	}
+	stream_ << "RU[" << _rules << "]" << "SZ[" << _gobanSize << "]";
+	if ( _handicap > 0 ) {
 		stream_ << "HA[" << _handicap << "]";
-	stream_ << "KM[" << setw( 1 ) << _komi << "]";
-	if ( ! _gameName.is_empty() )
-		stream_ << "GN[" << _gameName << "]";
-	stream_ << "TM[" << _time;
-	if ( ! _overTime.is_empty() )
-		stream_ << "]OT[" << _overTime;
-	stream_ << ( noNL_ ? "]PB[" : "]\nPB[" ) << _blackName << "]PW[" << _whiteName << "]";
-	if ( ! _blackRank.is_empty() )
-		stream_ << ( noNL_ ? "" : "\n" ) << "BR[" << _blackRank << "]";
-	if ( ! _whiteRank.is_empty() )
-		stream_ << "WR[" << _whiteRank << "]";
-	if ( ! noNL_ && ! ( _blackRank.is_empty() && _whiteRank.is_empty() ) )
-		stream_ << "\n";
-	if ( ! _date.is_empty() )
-		stream_ << "DT[" << _date << "]";
-	if ( ! _event.is_empty() )
-		stream_ << "EV[" << _event << "]";
-	if ( ! _round.is_empty() )
-		stream_ << "RO[" << _round << "]";
-	if ( ! _source.is_empty() )
-		stream_ << "SO[" << _source << "]";
-	if ( ! _author.is_empty() )
-		stream_ << "AN[" << _author << "]";
+	}
+	HString komiStr( _komi100 / 100 );
+	if ( _komi100 % 100 ) {
+		komiStr.append( "." );
+		if ( _komi100 % 10 ) {
+			komiStr.append( _komi100 % 100 );
+		} else {
+			komiStr.append( ( _komi100 % 100 ) / 10 );
+		}
+	}
+	stream_ << "KM[" << komiStr << "]";
+	dump_tag( stream_, "GN", _gameName );
+	stream_ << "TM[" << _time << "]";
+	dump_tag( stream_, "OT", _overTime );
+	stream_ << nl << "PB[" << _blackName << "]PW[" << _whiteName << "]";
+	dump_tag( stream_, "BR", _blackRank );
+	dump_tag( stream_, "WR", _whiteRank );
+	dump_tag( stream_, "BC", _blackCountry );
+	dump_tag( stream_, "WC", _whiteCountry );
+	if ( ! ( _blackRank.is_empty() && _whiteRank.is_empty() ) ) {
+		stream_ << nl;
+	}
+	HString result( get_result() );
+	dump_tag( stream_, "RE", result );
+	dump_tag( stream_, "DT", _date );
+	dump_tag( stream_, "EV", _event );
+	dump_tag( stream_, "RO", _round );
+	dump_tag( stream_, "SO", _source );
+	dump_tag( stream_, "US", _creator );
+	dump_tag( stream_, "AN", _annotator );
 	if ( ! _comment.is_empty() ) {
 		_cache = _comment;
 		_cache.replace( "[", "\\[" ).replace( "]", "\\]" );
@@ -616,11 +750,12 @@ void SGF::save( HStreamInterface& stream_, bool noNL_ ) {
 	}
 	if ( ! _tree.is_empty() ) {
 		game_tree_t::const_node_t root( _tree.get_root() );
-		if ( (*root)->setup() )
+		if ( (*root)->setup() ) {
 			save_setup( root, stream_, noNL_ );
+		}
 		save_variations( first_to_move(), root, stream_, noNL_ );
 	}
-	stream_ << ( noNL_ ? ")" : ")\n" );
+	stream_ << ")" << nl;
 	return;
 	M_EPILOG
 }
