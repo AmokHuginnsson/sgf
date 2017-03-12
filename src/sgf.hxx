@@ -132,7 +132,7 @@ public:
 		void swap( Coord& c_ ) {
 			if ( &c_ != this ) {
 				using yaal::swap;
-				swap( *reinterpret_cast<yaal::i16_t*>( _data ), *reinterpret_cast<yaal::i16_t*>( c_._data ) );
+				swap( _data, c_._data );
 			}
 		}
 		bool operator == ( Coord const& c_ ) const {

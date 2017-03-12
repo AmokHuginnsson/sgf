@@ -1023,7 +1023,7 @@ void banner( void ) {
 }
 
 extern "C"
-int sgf_sgf_main( int, char** );
+int sgf_sgf_main( int, char** ) __attribute__((noreturn));
 extern "C"
 int sgf_sgf_main( int, char** ) {
 	static char const dynamicLinkerPath[]
@@ -1032,8 +1032,7 @@ int sgf_sgf_main( int, char** ) {
 		yaal::hcore::banner( PACKAGE_NAME, PACKAGE_VERSION );
 		yaal::tools::banner();
 		sgf::banner();
-		::exit( 0 );
 	}
-	return ( 0 );
+	::exit( 0 );
 }
 
