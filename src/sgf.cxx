@@ -611,7 +611,7 @@ void SGF::parse_property( void ) {
 		if ( singleValue.get_length() > 0 ) {
 			if ( ! singleValue.is_empty() ) {
 				if ( isdigit( singleValue[2] ) ) {
-					_result = lexical_cast<int>( singleValue.raw() + 2 );
+					_result = lexical_cast<int>( singleValue.c_str() + 2 );
 				} else {
 					char r( static_cast<char>( toupper( singleValue[2] ) ) );
 					if ( r == 'R' )
@@ -635,7 +635,7 @@ void SGF::parse_property( void ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it ) {
 			if ( it->find( ":" ) != 2 )
 				throw SGFException( _errMsg_[ERROR::MALFORMED_LABEL], static_cast<int>( _cur - _beg ) );
-			_cache.assign( it->raw() + 3, it->get_length() - 3 );
+			_cache.assign( it->c_str() + 3, it->get_length() - 3 );
 			add_label( make_pair( Coord( *it ), _cache ) );
 		}
 	} else if ( _cachePropIdent == "B" ) {
