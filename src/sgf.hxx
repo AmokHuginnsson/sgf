@@ -36,8 +36,6 @@ Copyright:
 
 namespace sgf {
 
-char const* non_space( char const*, char const* );
-
 class SGF {
 public:
 	typedef SGF this_type;
@@ -116,8 +114,8 @@ public:
 		Coord( yaal::hcore::HString const& coord_ )
 			: _data() {
 			if ( coord_.get_length() >= 2 ) {
-				_data[0] = coord_[0];
-				_data[1] = coord_[1];
+				_data[0] = static_cast<char>( coord_[0].get() );
+				_data[1] = static_cast<char>( coord_[1].get() );
 			}
 		}
 		int col( void ) const {
@@ -247,9 +245,9 @@ public:
 private:
 	GAME_TYPE::game_type_t _gameType;
 	yaal::hcore::HString _rawData;
-	char const* _beg;
-	char const* _cur;
-	char const* _end;
+	yaal::hcore::HString::const_iterator _beg;
+	yaal::hcore::HString::const_iterator _cur;
+	yaal::hcore::HString::const_iterator _end;
 	yaal::hcore::HString _cache;
 	yaal::hcore::HString _cachePropIdent;
 	typedef yaal::hcore::HArray<yaal::hcore::HString> prop_values_t;

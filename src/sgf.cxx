@@ -24,13 +24,14 @@ Copyright:
  FITNESS FOR A PARTICULAR PURPOSE. Use it at your own risk.
 */
 
-#include <cctype>
+#include <cwctype>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
 
 #include <yaal/hcore/hfile.hxx>
 #include <yaal/hcore/hcore.hxx>
+#include <yaal/hcore/hformat.hxx>
 #include <yaal/tools/tools.hxx>
 #include <yaal/tools/assign.hxx>
 #include <yaal/tools/stringalgo.hxx>
@@ -68,9 +69,9 @@ SGF::Coord const SGF::PASS( "\0\0\0" );
 SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	: _gameType( gameType_ )
 	, _rawData()
-	, _beg( NULL )
-	, _cur( NULL )
-	, _end( NULL )
+	, _beg()
+	, _cur()
+	, _end()
 	, _cache()
 	, _cachePropIdent()
 	, _cachePropValue()
@@ -150,7 +151,7 @@ void SGF::swap( SGF& sgf_ ) {
 void SGF::clear( void ) {
 	M_PROLOG
 	_rawData.clear();
-	_beg = _cur = _end = NULL;
+	_beg = _cur = _end = HString::const_iterator();
 	_cache.clear();
 	_cachePropIdent.clear();
 	_cachePropValue.clear();
@@ -274,7 +275,7 @@ void SGF::set_time( int time_ ) {
 
 void SGF::set_overtime( int byoCount_, int byoTime_ ) {
 	M_PROLOG
-	_overTime.format( "%dx%d byo-yomi", byoCount_, byoTime_ );
+	_overTime = format( "%dx%d byo-yomi", byoCount_, byoTime_ );
 	return;
 	M_EPILOG
 }
@@ -317,16 +318,16 @@ SGF::byoyomi_t SGF::get_byoyomi( void ) const {
 	M_PROLOG
 	byoyomi_t byoyomi;
 	if ( ! _overTime.is_empty() ) {
-		int long byoCountStart( _overTime.find_one_of( _digit_.data() ) );
+		int long byoCountStart( _overTime.find_one_of( character_class( CHARACTER_CLASS::DIGIT ).data() ) );
 		if ( byoCountStart == HString::npos )
 			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 0 );
-		int long byoCountEnd( _overTime.find_other_than( _digit_.data(), byoCountStart ) );
+		int long byoCountEnd( _overTime.find_other_than( character_class( CHARACTER_CLASS::DIGIT ).data(), byoCountStart ) );
 		if ( byoCountEnd == HString::npos )
 			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 1 );
-		int long byoTimeStart( _overTime.find_one_of( _digit_.data(), byoCountEnd ) );
+		int long byoTimeStart( _overTime.find_one_of( character_class( CHARACTER_CLASS::DIGIT ).data(), byoCountEnd ) );
 		if ( byoTimeStart == HString::npos )
 			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 2 );
-		int long byoTimeEnd( _overTime.find_other_than( _digit_.data(), byoTimeStart ) );
+		int long byoTimeEnd( _overTime.find_other_than( character_class( CHARACTER_CLASS::DIGIT ).data(), byoTimeStart ) );
 		try {
 			byoyomi.first = lexical_cast<int>( _overTime.substr( byoCountStart, byoCountEnd - byoCountStart ) );
 			byoyomi.second = lexical_cast<int>( _overTime.substr( byoTimeStart, ( byoTimeEnd != HString::npos ? byoTimeEnd : _overTime.get_length() ) - byoTimeStart ) );
@@ -361,9 +362,9 @@ int SGF::get_time( void ) const {
 	return ( _time );
 }
 
-char const* non_space( char const* first, char const* last ) {
+inline HString::const_iterator non_space( HString::const_iterator first, HString::const_iterator last ) {
 	for ( ; first != last ; ++ first ) {
-		if ( ! ::memchr( _whiteSpace_.data(), *first, static_cast<int unsigned>( _whiteSpace_.size() ) ) ) {
+		if ( ! character_class( CHARACTER_CLASS::WHITESPACE ).has( *first ) ) {
 			break;
 		}
 	}
@@ -506,10 +507,10 @@ int parse_time( yaal::hcore::HString const& time_, int pos_ ) {
 	int time( 0 );
 	HString numStr;
 	for ( int i = 0, C = static_cast<int>( time_.get_length() ); i < C; ++ i ) {
-		if ( isdigit( time_[i] ) ) {
+		if ( is_digit( time_[i] ) ) {
 			numStr.append( time_[i] );
 		} else if ( ! numStr.is_empty() ) {
-			char unit( static_cast<char>( tolower( time_[i] ) ) );
+			char unit( static_cast<char>( towlower( static_cast<wint_t>( time_[i].get() ) ) ) );
 			if ( unit == 'h' ) {
 				time += ( lexical_cast<int>( numStr ) * 3600 );
 			} else if ( unit == 'm' ) {
@@ -610,53 +611,60 @@ void SGF::parse_property( void ) {
 	} else if ( _cachePropIdent == "RE" ) {
 		if ( singleValue.get_length() > 0 ) {
 			if ( ! singleValue.is_empty() ) {
-				if ( isdigit( singleValue[2] ) ) {
-					_result = lexical_cast<int>( singleValue.c_str() + 2 );
+				if ( is_digit( singleValue[2] ) ) {
+					_result = lexical_cast<int>( singleValue.substr( 2 ) );
 				} else {
-					char r( static_cast<char>( toupper( singleValue[2] ) ) );
-					if ( r == 'R' )
+					char r( static_cast<char>( towupper( static_cast<wint_t>( singleValue[2].get() ) ) ) );
+					if ( r == 'R' ) {
 						_result = RESIGN;
-					else if ( r == 'T' )
+					} else if ( r == 'T' ) {
 						_result = TIME;
+					}
 				}
 			} else {
 				_result = RESIGN;
 			}
-			char player( static_cast<char>( toupper( singleValue[0] ) ) );
+			char player( static_cast<char>( towupper( static_cast<wint_t>( singleValue[0].get() ) ) ) );
 			if ( player == 'W' ) {
 				_result = -_result;
 			}
 		}
 	} else if ( _positionTagDict_.find( _cachePropIdent ) != _positionTagDict_.end() ) {
 		position_tag_dict_t::const_iterator tag( _positionTagDict_.find( _cachePropIdent ) );
-		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it )
+		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it ) {
 			add_position( tag->second, Coord( *it ) );
+		}
 	} else if ( _cachePropIdent == "LB" ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it ) {
-			if ( it->find( ":" ) != 2 )
+			if ( it->find( ":" ) != 2 ) {
 				throw SGFException( _errMsg_[ERROR::MALFORMED_LABEL], static_cast<int>( _cur - _beg ) );
-			_cache.assign( it->c_str() + 3, it->get_length() - 3 );
+			}
+			_cache.assign( *it, 3, it->get_length() - 3 );
 			add_label( make_pair( Coord( *it ), _cache ) );
 		}
 	} else if ( _cachePropIdent == "B" ) {
-		if ( is_first_move() && ( first_to_move() != Player::BLACK ) )
+		if ( is_first_move() && ( first_to_move() != Player::BLACK ) ) {
 			throw SGFException( _errMsg_[ERROR::INCONSISTENT_FIRST_MOVE], static_cast<int>( _cur - _beg ) );
+		}
 		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "W" ) {
-		if ( is_first_move() && ( first_to_move() != Player::WHITE ) )
+		if ( is_first_move() && ( first_to_move() != Player::WHITE ) ) {
 			throw SGFException( _errMsg_[ERROR::INCONSISTENT_FIRST_MOVE], static_cast<int>( _cur - _beg ) );
+		}
 		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "C" ) {
-		if ( _currentMove && ( _currentMove != _tree.get_root() ) )
+		if ( _currentMove && ( _currentMove != _tree.get_root() ) ) {
 			(*_currentMove)->add_comment( singleValue );
-		else
+		} else {
 			_comment += singleValue;
-	} else if ( ( _currentMove && ( _currentMove != _tree.get_root() ) ) && ( ( _cachePropIdent == "BL" ) || ( _cachePropIdent == "WL" ) ) )
+		}
+	} else if ( ( _currentMove && ( _currentMove != _tree.get_root() ) ) && ( ( _cachePropIdent == "BL" ) || ( _cachePropIdent == "WL" ) ) ) {
 		(*_currentMove)->set_time( lexical_cast<int>( singleValue ) );
-	else if ( ( _currentMove && ( _currentMove != _tree.get_root() ) ) && ( ( _cachePropIdent == "OB" ) || ( _cachePropIdent == "OW" ) ) )
+	} else if ( ( _currentMove && ( _currentMove != _tree.get_root() ) ) && ( ( _cachePropIdent == "OB" ) || ( _cachePropIdent == "OW" ) ) ) {
 		(*_currentMove)->set_time( -lexical_cast<int>( singleValue ) );
-	else
+	} else {
 		clog << "property: `" << _cachePropIdent << "' = `" << singleValue << "'" << endl;
+	}
 	return;
 	M_EPILOG
 }
@@ -664,7 +672,7 @@ void SGF::parse_property( void ) {
 HString const& SGF::parse_property_ident( void ) {
 	M_PROLOG
 	_cache.clear();
-	while ( ( _cur != _end ) && isupper( *_cur ) ) {
+	while ( ( _cur != _end ) && is_upper( *_cur ) ) {
 		_cache += *_cur;
 		++ _cur;
 	}
@@ -675,8 +683,9 @@ HString const& SGF::parse_property_ident( void ) {
 void SGF::parse_property_value( prop_values_t& values_ ) {
 	M_PROLOG
 	not_eof();
-	if ( *_cur != TERM::PROP_VAL_OPEN )
+	if ( *_cur != TERM::PROP_VAL_OPEN ) {
 		throw SGFException( _errMsg_[ERROR::PROP_VAL_OPEN_EXPECTED], static_cast<int>( _cur - _beg ) );
+	}
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
 	_cache.clear();
