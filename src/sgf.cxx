@@ -294,16 +294,16 @@ SGF::byoyomi_t SGF::get_byoyomi( void ) const {
 	M_PROLOG
 	byoyomi_t byoyomi;
 	if ( ! _overTime.is_empty() ) {
-		int long byoCountStart( _overTime.find_one_of( character_class( CHARACTER_CLASS::DIGIT ).data() ) );
+		int long byoCountStart( _overTime.find_one_of( character_class<CHARACTER_CLASS::DIGIT>().data() ) );
 		if ( byoCountStart == HString::npos )
 			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 0 );
-		int long byoCountEnd( _overTime.find_other_than( character_class( CHARACTER_CLASS::DIGIT ).data(), byoCountStart ) );
+		int long byoCountEnd( _overTime.find_other_than( character_class<CHARACTER_CLASS::DIGIT>().data(), byoCountStart ) );
 		if ( byoCountEnd == HString::npos )
 			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 1 );
-		int long byoTimeStart( _overTime.find_one_of( character_class( CHARACTER_CLASS::DIGIT ).data(), byoCountEnd ) );
+		int long byoTimeStart( _overTime.find_one_of( character_class<CHARACTER_CLASS::DIGIT>().data(), byoCountEnd ) );
 		if ( byoTimeStart == HString::npos )
 			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 2 );
-		int long byoTimeEnd( _overTime.find_other_than( character_class( CHARACTER_CLASS::DIGIT ).data(), byoTimeStart ) );
+		int long byoTimeEnd( _overTime.find_other_than( character_class<CHARACTER_CLASS::DIGIT>().data(), byoTimeStart ) );
 		try {
 			byoyomi.first = lexical_cast<int>( _overTime.substr( byoCountStart, byoCountEnd - byoCountStart ) );
 			byoyomi.second = lexical_cast<int>( _overTime.substr( byoTimeStart, ( byoTimeEnd != HString::npos ? byoTimeEnd : _overTime.get_length() ) - byoTimeStart ) );
@@ -340,7 +340,7 @@ int SGF::get_time( void ) const {
 
 inline HString::const_iterator non_space( HString::const_iterator first, HString::const_iterator last ) {
 	for ( ; first != last ; ++ first ) {
-		if ( ! character_class( CHARACTER_CLASS::WHITESPACE ).has( *first ) ) {
+		if ( ! character_class<CHARACTER_CLASS::WHITESPACE>().has( *first ) ) {
 			break;
 		}
 	}
