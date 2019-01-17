@@ -136,7 +136,7 @@ install-environment:
 
 $(HAPI_HEADER): $(HDRS)
 	@printf "%b" "Making headers ... " && \
-	$(call invoke,$(DIR_ROOT)/_aux/mkheaders --lib-name=$(LIB_NAME) --lib-version=$(LIB_VERSION) --dir-root="$(DIR_ROOT)" --dir-build="$(DIR_BUILD)" --headers="$(HDRS)" && ) \
+	$(call invoke,$(DIR_ROOT)/_aux/mkheaders --lib-name=$(LIB_NAME) --dir-root="$(DIR_ROOT)" --dir-build="$(DIR_BUILD)" --headers="$(HDRS)" && ) \
 	printf "%b$(NL)" "done.$(CL)$(BOLD)" && \
 	printf "%b\n" "All OK!$(RS)";
 
