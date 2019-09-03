@@ -51,7 +51,7 @@ SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
 	, _cache()
 	, _cachePropIdent()
 	, _cachePropValue()
-	, _currentMove( NULL )
+	, _currentMove( nullptr )
 	, _app( app_ )
 	, _charset()
 	, _gameName()
@@ -162,7 +162,7 @@ void SGF::clear( void ) {
 
 void SGF::clear_game( void ) {
 	M_PROLOG
-	_currentMove = NULL;
+	_currentMove = nullptr;
 	_setups.clear();
 	_tree.clear();
 	return;
