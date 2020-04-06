@@ -42,7 +42,7 @@ char const _errMsg_[][50] = {
 
 SGF::Coord const SGF::PASS( "\0\0\0" );
 
-SGF::SGF( GAME_TYPE::game_type_t gameType_, HString const& app_ )
+SGF::SGF( GAME_TYPE gameType_, HString const& app_ )
 	: _gameType( gameType_ )
 	, _rawData()
 	, _beg()
@@ -169,7 +169,7 @@ void SGF::clear_game( void ) {
 	M_EPILOG
 }
 
-SGF::Player::player_t SGF::first_to_move( void ) const {
+SGF::Player SGF::first_to_move( void ) const {
 	M_PROLOG
 	return ( _handicap > 1 ? Player::WHITE : Player::BLACK );
 	M_EPILOG
@@ -177,8 +177,9 @@ SGF::Player::player_t SGF::first_to_move( void ) const {
 
 void SGF::move( Coord const& coord_, int time_ ) {
 	M_PROLOG
-	if ( ! _currentMove )
+	if ( ! _currentMove ) {
 		_currentMove = _tree.create_new_root();
+	}
 	bool newMove( true );
 	for ( game_tree_t::HNode::iterator it( _currentMove->begin() ), end( _currentMove->end() ); it != end; ++ it ) {
 		if ( (*it)->coord() == coord_ ) {
@@ -187,14 +188,15 @@ void SGF::move( Coord const& coord_, int time_ ) {
 			break;
 		}
 	}
-	if ( newMove )
+	if ( newMove ) {
 		_currentMove = &*_currentMove->add_node( Move( coord_ ) );
+	}
 	(*_currentMove)->set_time( time_ );
 	return;
 	M_EPILOG
 }
 
-void SGF::set_player( Player::player_t player_, yaal::hcore::HString const& name_, yaal::hcore::HString const& rank_ ) {
+void SGF::set_player( Player player_, yaal::hcore::HString const& name_, yaal::hcore::HString const& rank_ ) {
 	M_PROLOG
 	if ( player_ == Player::BLACK ) {
 		_blackName = name_;
@@ -295,20 +297,23 @@ SGF::byoyomi_t SGF::get_byoyomi( void ) const {
 	byoyomi_t byoyomi;
 	if ( ! _overTime.is_empty() ) {
 		int long byoCountStart( _overTime.find_one_of( character_class<CHARACTER_CLASS::DIGIT>().data() ) );
-		if ( byoCountStart == HString::npos )
-			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 0 );
+		if ( byoCountStart == HString::npos ) {
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::BAD_OVERTIME_DEFINITION )], 0 );
+		}
 		int long byoCountEnd( _overTime.find_other_than( character_class<CHARACTER_CLASS::DIGIT>().data(), byoCountStart ) );
-		if ( byoCountEnd == HString::npos )
-			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 1 );
+		if ( byoCountEnd == HString::npos ) {
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::BAD_OVERTIME_DEFINITION )], 1 );
+		}
 		int long byoTimeStart( _overTime.find_one_of( character_class<CHARACTER_CLASS::DIGIT>().data(), byoCountEnd ) );
-		if ( byoTimeStart == HString::npos )
-			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 2 );
+		if ( byoTimeStart == HString::npos ) {
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::BAD_OVERTIME_DEFINITION )], 2 );
+		}
 		int long byoTimeEnd( _overTime.find_other_than( character_class<CHARACTER_CLASS::DIGIT>().data(), byoTimeStart ) );
 		try {
 			byoyomi.first = lexical_cast<int>( _overTime.substr( byoCountStart, byoCountEnd - byoCountStart ) );
 			byoyomi.second = lexical_cast<int>( _overTime.substr( byoTimeStart, ( byoTimeEnd != HString::npos ? byoTimeEnd : _overTime.get_length() ) - byoTimeStart ) );
 		} catch ( HLexicalCastException const& ) {
-			throw SGFException( _errMsg_[ ERROR::BAD_OVERTIME_DEFINITION ], 3 );
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::BAD_OVERTIME_DEFINITION )], 3 );
 		}
 	}
 	return ( byoyomi );
@@ -394,7 +399,7 @@ void SGF::parse( void ) {
 
 void SGF::not_eof( void ) {
 	if ( _cur == _end ) {
-		throw SGFException( _errMsg_[ERROR::UNEXPECTED_EOF], static_cast<int>( _cur - _beg ) );
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::UNEXPECTED_EOF )], static_cast<int>( _cur - _beg ) );
 	}
 	return;
 }
@@ -403,7 +408,7 @@ void SGF::parse_game_tree( void ) {
 	M_PROLOG
 	not_eof();
 	if ( *_cur != TERM::GT_OPEN ) {
-		throw SGFException( _errMsg_[ERROR::GT_OPEN_EXPECTED], static_cast<int>( _cur - _beg ) );
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::GT_OPEN_EXPECTED )], static_cast<int>( _cur - _beg ) );
 	}
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
@@ -418,7 +423,7 @@ void SGF::parse_game_tree( void ) {
 		not_eof();
 	}
 	if ( *_cur != TERM::GT_CLOSE ) {
-		throw SGFException( _errMsg_[ERROR::GT_CLOSE_EXPECTED], static_cast<int>( _cur - _beg ) );
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::GT_CLOSE_EXPECTED )], static_cast<int>( _cur - _beg ) );
 	}
 	_cur = non_space( ++ _cur, _end );
 	return;
@@ -451,7 +456,7 @@ void SGF::parse_sequence( void ) {
 void SGF::parse_node( void ) {
 	M_PROLOG
 	if ( *_cur != TERM::NODE_MARK ) {
-		throw SGFException( _errMsg_[ERROR::NODE_MARK_EXPECTED], static_cast<int>( _cur - _beg ) );
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::NODE_MARK_EXPECTED )], static_cast<int>( _cur - _beg ) );
 	}
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
@@ -466,7 +471,7 @@ void SGF::parse_node( void ) {
 
 namespace {
 
-typedef HMap<HString, SGF::Position::position_t> position_tag_dict_t;
+typedef HMap<HString, SGF::Position> position_tag_dict_t;
 
 position_tag_dict_t const _positionTagDict_ = sequence<HString>( "AE", SGF::Position::REMOVE )
 	( "AB", SGF::Position::BLACK )
@@ -519,22 +524,26 @@ bool SGF::is_first_move( void ) const {
 void SGF::parse_property( void ) {
 	M_PROLOG
 	_cachePropIdent = parse_property_ident();
-	if ( _cachePropIdent.is_empty() )
-		throw SGFException( _errMsg_[ERROR::PROP_IDENT_EXPECTED], static_cast<int>( _cur - _beg ) );
+	if ( _cachePropIdent.is_empty() ) {
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::PROP_IDENT_EXPECTED )], static_cast<int>( _cur - _beg ) );
+	}
 	_cur = non_space( _cur, _end );
 	not_eof();
 	_cachePropValue.clear();
 	parse_property_value( _cachePropValue );
-	while ( *_cur == TERM::PROP_VAL_OPEN )
+	while ( *_cur == TERM::PROP_VAL_OPEN ) {
 		parse_property_value( _cachePropValue );
+	}
 	HString const& singleValue( _cachePropValue[0] );
 	if ( _cachePropIdent == "GM" ) {
-		if ( lexical_cast<int>( singleValue ) != _gameType )
-			throw SGFException( _errMsg_[ERROR::BAD_GAME_TYPE], static_cast<int>( _cur - _beg ) );
+		if ( static_cast<GAME_TYPE>( lexical_cast<int>( singleValue ) ) != _gameType ) {
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::BAD_GAME_TYPE )], static_cast<int>( _cur - _beg ) );
+		}
 	} else if ( _cachePropIdent == "FF" ) {
 		int ff( lexical_cast<int>( singleValue ) );
-		if ( ( ff < 1 ) || ( ff > 4 ) )
-			throw SGFException( _errMsg_[ERROR::BAD_FILE_FORMAT], static_cast<int>( _cur - _beg ) );
+		if ( ( ff < 1 ) || ( ff > 4 ) ) {
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::BAD_FILE_FORMAT )], static_cast<int>( _cur - _beg ) );
+		}
 	} else if ( _cachePropIdent == "AP" ) {
 		_app = singleValue;
 	} else if ( _cachePropIdent == "CA" ) {
@@ -613,19 +622,19 @@ void SGF::parse_property( void ) {
 	} else if ( _cachePropIdent == "LB" ) {
 		for ( prop_values_t::const_iterator it( _cachePropValue.begin() ), end( _cachePropValue.end() ); it != end; ++ it ) {
 			if ( it->find( ":" ) != 2 ) {
-				throw SGFException( _errMsg_[ERROR::MALFORMED_LABEL], static_cast<int>( _cur - _beg ) );
+				throw SGFException( _errMsg_[static_cast<int>( ERROR::MALFORMED_LABEL )], static_cast<int>( _cur - _beg ) );
 			}
 			_cache.assign( *it, 3, it->get_length() - 3 );
 			add_label( make_pair( Coord( *it ), _cache ) );
 		}
 	} else if ( _cachePropIdent == "B" ) {
 		if ( is_first_move() && ( first_to_move() != Player::BLACK ) ) {
-			throw SGFException( _errMsg_[ERROR::INCONSISTENT_FIRST_MOVE], static_cast<int>( _cur - _beg ) );
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::INCONSISTENT_FIRST_MOVE )], static_cast<int>( _cur - _beg ) );
 		}
 		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "W" ) {
 		if ( is_first_move() && ( first_to_move() != Player::WHITE ) ) {
-			throw SGFException( _errMsg_[ERROR::INCONSISTENT_FIRST_MOVE], static_cast<int>( _cur - _beg ) );
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::INCONSISTENT_FIRST_MOVE )], static_cast<int>( _cur - _beg ) );
 		}
 		(*_currentMove)->set_coord( singleValue );
 	} else if ( _cachePropIdent == "C" ) {
@@ -660,7 +669,7 @@ void SGF::parse_property_value( prop_values_t& values_ ) {
 	M_PROLOG
 	not_eof();
 	if ( *_cur != TERM::PROP_VAL_OPEN ) {
-		throw SGFException( _errMsg_[ERROR::PROP_VAL_OPEN_EXPECTED], static_cast<int>( _cur - _beg ) );
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::PROP_VAL_OPEN_EXPECTED )], static_cast<int>( _cur - _beg ) );
 	}
 	_cur = non_space( ++ _cur, _end );
 	not_eof();
@@ -668,13 +677,15 @@ void SGF::parse_property_value( prop_values_t& values_ ) {
 	bool escaped( false );
 	while ( ( _cur != _end ) && ( escaped || ( *_cur != TERM::PROP_VAL_CLOSE ) ) ) {
 		escaped = ( *_cur == TERM::ESCAPE );
-		if ( ! escaped )
+		if ( ! escaped ) {
 			_cache += *_cur;
+		}
 		++ _cur;
 	}
 	not_eof();
-	if ( *_cur != TERM::PROP_VAL_CLOSE )
-		throw SGFException( _errMsg_[ERROR::PROP_VAL_CLOSE_EXPECTED], static_cast<int>( _cur - _beg ) );
+	if ( *_cur != TERM::PROP_VAL_CLOSE ) {
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::PROP_VAL_CLOSE_EXPECTED )], static_cast<int>( _cur - _beg ) );
+	}
 	_cur = non_space( ++ _cur, _end );
 	values_.push_back( _cache );
 	M_EPILOG
@@ -752,21 +763,24 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 	};
 	Move const& m( *(*node_) );
 	Setup const& setup( *m.setup() );
-	if ( ( m.type() == Move::TYPE::SETUP ) && ( node_ != _tree.get_root() ) )
+	if ( ( m.type() == Move::TYPE::SETUP ) && ( node_ != _tree.get_root() ) ) {
 		stream_ << ( noNL_ ? ";" : "\n;" );
+	}
 	Setup::setup_t::const_iterator toRemove( setup._data.find( Position::REMOVE ) );
 	if ( toRemove != setup._data.end() ) {
 		stream_ << "AE";
-		for ( Setup::coords_t::const_iterator it( toRemove->second.begin() ), end( toRemove->second.end() ); it != end; ++ it )
+		for ( Setup::coords_t::const_iterator it( toRemove->second.begin() ), end( toRemove->second.end() ); it != end; ++ it ) {
 			stream_ << "[" << it->data() << "]";
+		}
 	}
 	for ( Setup::setup_t::const_iterator it( setup._data.begin() ), end( setup._data.end() ); it != end; ++ it ) {
 		if ( it->first == Position::REMOVE ) {
 			continue;
 		} else {
-			stream_ << setupTag[it->first];
-			for ( Setup::coords_t::const_iterator c( it->second.begin() ), ce( it->second.end() ); c != ce; ++ c )
+			stream_ << setupTag[static_cast<int>( it->first )];
+			for ( Setup::coords_t::const_iterator c( it->second.begin() ), ce( it->second.end() ); c != ce; ++ c ) {
 				stream_ << "[" << c->data() << "]";
+			}
 		}
 	}
 	if ( ! setup._labels.is_empty() ) {
@@ -779,7 +793,7 @@ void SGF::save_setup( game_tree_t::const_node_t node_, yaal::hcore::HStreamInter
 	M_EPILOG
 }
 
-void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
+void SGF::save_move( Player of_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	/*
 	 * Pass move has two forms:
@@ -793,10 +807,11 @@ void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStr
 	stream_ << ( noNL_ ? ";" : "\n;" ) << ( of_ == Player::BLACK ? 'B' : 'W' ) << '[' << (*node_)->coord().data() << ']';
 	int time( (*node_)->time() );
 	if ( time != 0 ) {
-		if ( time > 0 )
+		if ( time > 0 ) {
 			stream_ << ( of_ == Player::BLACK ? "BL[" : "WL[" ) << time << "]";
-		else
+		} else {
 			stream_ << ( of_ == Player::BLACK ? "OB[" : "OW[" ) << -time << "]";
+		}
 	}
 	if ( ! (*node_)->comment().is_empty() ) {
 		_cache = (*node_)->comment();
@@ -807,7 +822,7 @@ void SGF::save_move( Player::player_t of_, game_tree_t::const_node_t node_, HStr
 	M_EPILOG
 }
 
-void SGF::save_variations( Player::player_t from_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
+void SGF::save_variations( Player from_, game_tree_t::const_node_t node_, HStreamInterface& stream_, bool noNL_ ) {
 	M_PROLOG
 	int childCount( 0 );
 	while ( ( childCount = static_cast<int>( node_->child_count() ) ) == 1 ) {
@@ -816,19 +831,21 @@ void SGF::save_variations( Player::player_t from_, game_tree_t::const_node_t nod
 			save_move( from_, node_, stream_, noNL_ );
 			from_ = ( from_ == Player::BLACK ? Player::WHITE : Player::BLACK );
 		}
-		if ( (*node_)->setup() )
+		if ( (*node_)->setup() ) {
 			save_setup( node_, stream_, noNL_ );
+		}
 	}
 	if ( childCount > 1 ) /* We have variations. */ {
 		for ( game_tree_t::HNode::const_iterator it( node_->begin() ), end( node_->end() ); it != end; ++ it ) {
 			stream_ << ( noNL_ ? "(" : "\n(" );
-			Player::player_t p( from_ );
+			Player p( from_ );
 			if ( (*it)->type() == Move::TYPE::MOVE ) {
 				save_move( from_, &*it, stream_, noNL_ );
 				p = ( p == Player::BLACK ? Player::WHITE : Player::BLACK );
 			}
-			if ( (*it)->setup() )
+			if ( (*it)->setup() ) {
 				save_setup( &*it, stream_, noNL_ );
+			}
 			save_variations( p, &*it, stream_, noNL_ );
 			stream_ << ( noNL_ ? ")" : ")\n" );
 		}
@@ -853,15 +870,16 @@ void SGF::Move::swap( Move& move_ ) {
 
 void SGF::Move::set_coord( Coord const& coord_ ) {
 	M_PROLOG
-	if ( _type == TYPE::SETUP )
-		throw SGFException( _errMsg_[ERROR::MIXED_NODE] );
+	if ( _type == TYPE::SETUP ) {
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::MIXED_NODE )] );
+	}
 	_coord = coord_;
 	_type = TYPE::MOVE;
 	return;
 	M_EPILOG
 }
 
-void SGF::add_position( Position::position_t position_, Coord const& coord_ ) {
+void SGF::add_position( Position position_, Coord const& coord_ ) {
 	M_PROLOG
 	if ( ! _currentMove ) {
 		_setups.push_back( Setup() );
@@ -889,13 +907,16 @@ void SGF::add_label( Setup::label_t const& label_ ) {
 	M_EPILOG
 }
 
-void SGF::Move::add_position( Position::position_t position_, Coord const& coord_ ) {
+void SGF::Move::add_position( Position position_, Coord const& coord_ ) {
 	M_PROLOG
-	if ( ( position_ == Position::REMOVE )
-			|| ( position_ == Position::BLACK )
-			|| ( position_ == Position::WHITE ) ) {
-		if ( _type == TYPE::MOVE )
-			throw SGFException( _errMsg_[ERROR::MIXED_NODE] );
+	if (
+		( position_ == Position::REMOVE )
+		|| ( position_ == Position::BLACK )
+		|| ( position_ == Position::WHITE )
+	) {
+		if ( _type == TYPE::MOVE ) {
+			throw SGFException( _errMsg_[static_cast<int>( ERROR::MIXED_NODE )] );
+		}
 		_type = TYPE::SETUP;
 	}
 	_setup->add_position( position_, coord_ );
@@ -930,20 +951,23 @@ void SGF::Move::set_setup( Setup* setup_ ) {
 	M_EPILOG
 }
 
-void SGF::Setup::add_position( Position::position_t position_, Coord const& coord_ ) {
+void SGF::Setup::add_position( Position position_, Coord const& coord_ ) {
 	M_PROLOG
 	if ( position_ == Position::REMOVE ) {
 		for ( Setup::setup_t::iterator it( _data.begin() ), end( _data.end() ); it != end; ++ it ) {
-			if ( it->first == Position::REMOVE )
+			if ( it->first == Position::REMOVE ) {
 				continue;
+			}
 			it->second.remove( coord_ );
 		}
 	} else {
 		for ( Setup::setup_t::iterator it( _data.begin() ), end( _data.end() ); it != end; ++ it ) {
-			if ( it->first == Position::REMOVE )
+			if ( it->first == Position::REMOVE ) {
 				continue;
-			if ( find( it->second.begin(), it->second.end(), coord_ ) != it->second.end() )
-				throw SGFException( _errMsg_[ERROR::DUPLICATED_COORDINATE] );
+			}
+			if ( find( it->second.begin(), it->second.end(), coord_ ) != it->second.end() ) {
+				throw SGFException( _errMsg_[static_cast<int>( ERROR::DUPLICATED_COORDINATE )] );
+			}
 		}
 	}
 	coords_t& c( _data[position_] );
@@ -970,25 +994,28 @@ SGF::game_tree_t::const_node_t SGF::get_current_move( void ) const {
 
 void SGF::set_current_move( game_tree_t::const_node_t node_ ) {
 	M_PROLOG
-	if ( &node_->get_tree() != &_tree )
-		throw SGFException( _errMsg_[ERROR::MOVE_OUT_OF_RECORD] );
+	if ( &node_->get_tree() != &_tree ) {
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::MOVE_OUT_OF_RECORD )] );
+	}
 	_currentMove = const_cast<game_tree_t::node_t>( node_ );
 	return;
 	M_EPILOG
 }
 
-void SGF::Move::clear_markers( Position::position_t position_ ) {
+void SGF::Move::clear_markers( Position position_ ) {
 	M_PROLOG
-	if ( _setup )
+	if ( _setup ) {
 		_setup->_data.erase( position_ );
+	}
 	return;
 	M_EPILOG
 }
 
 void SGF::clear_markers( game_tree_t::const_node_t node_ ) {
 	M_PROLOG
-	if ( &node_->get_tree() != &_tree )
-		throw SGFException( _errMsg_[ERROR::MOVE_OUT_OF_RECORD] );
+	if ( &node_->get_tree() != &_tree ) {
+		throw SGFException( _errMsg_[static_cast<int>( ERROR::MOVE_OUT_OF_RECORD )] );
+	}
 	game_tree_t::node_t node( const_cast<game_tree_t::node_t>( node_ ) );
 	(*node)->clear_markers( Position::BLACK_TERITORY );
 	(*node)->clear_markers( Position::WHITE_TERITORY );

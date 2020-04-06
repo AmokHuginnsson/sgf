@@ -15,31 +15,27 @@ namespace sgf {
 class SGF {
 public:
 	typedef SGF this_type;
-	struct GAME_TYPE {
-		typedef enum {
-			GO = 1,
-			GOMOKU = 4
-		} game_type_t;
+	enum class GAME_TYPE {
+		GO = 1,
+		GOMOKU = 4
 	};
-	struct ERROR {
-		typedef enum {
-			UNEXPECTED_EOF = 0,
-			UNEXPECTED_DATA = 1,
-			GT_OPEN_EXPECTED = 2,
-			GT_CLOSE_EXPECTED = 3,
-			PROP_IDENT_EXPECTED = 4,
-			PROP_VAL_OPEN_EXPECTED = 5,
-			PROP_VAL_CLOSE_EXPECTED = 6,
-			NODE_MARK_EXPECTED = 7,
-			BAD_GAME_TYPE = 8,
-			BAD_FILE_FORMAT = 9,
-			BAD_OVERTIME_DEFINITION = 10,
-			MIXED_NODE = 11,
-			DUPLICATED_COORDINATE = 12,
-			MOVE_OUT_OF_RECORD = 13,
-			MALFORMED_LABEL = 14,
-			INCONSISTENT_FIRST_MOVE = 15
-		} code_t;
+	enum class ERROR {
+		UNEXPECTED_EOF = 0,
+		UNEXPECTED_DATA = 1,
+		GT_OPEN_EXPECTED = 2,
+		GT_CLOSE_EXPECTED = 3,
+		PROP_IDENT_EXPECTED = 4,
+		PROP_VAL_OPEN_EXPECTED = 5,
+		PROP_VAL_CLOSE_EXPECTED = 6,
+		NODE_MARK_EXPECTED = 7,
+		BAD_GAME_TYPE = 8,
+		BAD_FILE_FORMAT = 9,
+		BAD_OVERTIME_DEFINITION = 10,
+		MIXED_NODE = 11,
+		DUPLICATED_COORDINATE = 12,
+		MOVE_OUT_OF_RECORD = 13,
+		MALFORMED_LABEL = 14,
+		INCONSISTENT_FIRST_MOVE = 15
 	};
 	struct TERM {
 		static char const GT_OPEN = '(';
@@ -49,24 +45,20 @@ public:
 		static char const NODE_MARK = ';';
 		static char const ESCAPE = '\\';
 	};
-	struct Player {
-		typedef enum {
-			BLACK,
-			WHITE
-		} player_t;
+	enum class Player {
+		BLACK,
+		WHITE
 	};
-	struct Position {
-		typedef enum {
-			REMOVE = 0,
-			BLACK = 1,
-			WHITE = 2,
-			TRIANGLE = 3,
-			SQUARE = 4,
-			CIRCLE = 5,
-			MARK = 6,
-			BLACK_TERITORY = 7,
-			WHITE_TERITORY = 8
-		} position_t;
+	enum class Position {
+		REMOVE = 0,
+		BLACK = 1,
+		WHITE = 2,
+		TRIANGLE = 3,
+		SQUARE = 4,
+		CIRCLE = 5,
+		MARK = 6,
+		BLACK_TERITORY = 7,
+		WHITE_TERITORY = 8
 	};
 	struct DEFAULT {
 		static int const KOMI = 550;
@@ -75,8 +67,8 @@ public:
 	struct Coord {
 		char _data[3];
 		Coord( void )
-			: _data()
-			{ }
+			: _data() {
+		}
 		Coord( int col_, int row_ )
 			: _data() {
 			_data[0] = static_cast<char>( col_ + 'a' );
@@ -120,7 +112,7 @@ public:
 	struct Move;
 	struct Setup {
 		typedef yaal::hcore::HList<Coord> coords_t;
-		typedef yaal::hcore::HMap<Position::position_t, coords_t> setup_t;
+		typedef yaal::hcore::HMap<Position, coords_t> setup_t;
 		typedef yaal::hcore::HPair<Coord, yaal::hcore::HString> label_t;
 		typedef yaal::hcore::HList<label_t> labels_t;
 		setup_t _data;
@@ -136,7 +128,7 @@ public:
 			}
 		}
 	private:
-		void add_position( Position::position_t, Coord const& );
+		void add_position( Position, Coord const& );
 		void add_label( label_t const& );
 		friend struct Move;
 	};
@@ -157,23 +149,47 @@ public:
 		int _time;
 	public:
 		Move( void )
-			: _type( TYPE::INVALID ), _coord(), _comment(), _setup( NULL ), _time( 0 )
-			{}
+			: _type( TYPE::INVALID )
+			, _coord()
+			, _comment()
+			, _setup( nullptr )
+			, _time( 0 ) {
+		}
 		Move( Setup* setup_ )
-			: _type( TYPE::SETUP ), _coord(), _comment(), _setup( setup_ ), _time( 0 )
-			{}
+			: _type( TYPE::SETUP )
+			, _coord()
+			, _comment()
+			, _setup( setup_ )
+			, _time( 0 ) {
+		}
 		Move( Coord const& coord_ )
-			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ), _time( 0 )
-			{ }
+			: _type( TYPE::MOVE )
+			, _coord( coord_ )
+			, _comment()
+			, _setup( nullptr )
+			, _time( 0 ) {
+		}
 		Move( char const* const coord_ )
-			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ), _time( 0 )
-			{ }
+			: _type( TYPE::MOVE )
+			, _coord( coord_ )
+			, _comment()
+			, _setup( nullptr )
+			, _time( 0 ) {
+		}
 		Move( yaal::hcore::HString const& coord_ )
-			: _type( TYPE::MOVE ), _coord( coord_ ), _comment(), _setup( NULL ), _time( 0 )
-			{ }
+			: _type( TYPE::MOVE )
+			, _coord( coord_ )
+			, _comment()
+			, _setup( nullptr )
+			, _time( 0 ) {
+		}
 		Move( Move const& m_ )
-			: _type( m_._type ), _coord( m_._coord ), _comment( m_._comment ), _setup( m_._setup ), _time( m_._time )
-			{ }
+			: _type( m_._type )
+			, _coord( m_._coord )
+			, _comment( m_._comment )
+			, _setup( m_._setup )
+			, _time( m_._time ) {
+		}
 		Move& operator = ( Move const& m_ ) {
 			if ( &m_ != this ) {
 				Move tmp( m_ );
@@ -182,15 +198,16 @@ public:
 			return ( *this );
 		}
 		void swap( Move& );
-		Coord const& coord( void ) const
-			{ return ( _coord ); }
+		Coord const& coord( void ) const {
+			return ( _coord );
+		}
 		void set_coord( Coord const& );
 		void set_setup( Setup* );
 		void add_comment( yaal::hcore::HString const& );
 		void set_time( int );
-		void add_position( Position::position_t, Coord const& );
+		void add_position( Position, Coord const& );
 		void add_label( Setup::label_t const& );
-		void clear_markers( Position::position_t );
+		void clear_markers( Position );
 		int col( void ) const {
 			return ( _coord.col() );
 		}
@@ -219,7 +236,7 @@ public:
 	typedef yaal::hcore::HTree<Move> game_tree_t;
 	typedef yaal::hcore::HPair<int, int> byoyomi_t;
 private:
-	GAME_TYPE::game_type_t _gameType;
+	GAME_TYPE _gameType;
 	yaal::hcore::HString _rawData;
 	yaal::hcore::HString::const_iterator _beg;
 	yaal::hcore::HString::const_iterator _cur;
@@ -256,16 +273,16 @@ private:
 	yaal::hcore::HString _place;
 	yaal::hcore::HString _comment;
 public:
-	SGF( GAME_TYPE::game_type_t, yaal::hcore::HString const& = "libsgf" );
+	SGF( GAME_TYPE, yaal::hcore::HString const& = "libsgf" );
 	void swap( SGF& );
 	void load( yaal::hcore::HStreamInterface& );
 	void load( yaal::hcore::HString const& );
 	void save( yaal::hcore::HStreamInterface&, bool = false );
 	void move( Coord const&, int = 0 );
 	void clear( void );
-	void add_position( Position::position_t, Coord const& );
+	void add_position( Position, Coord const& );
 	void add_label( Setup::label_t const& );
-	void set_player( Player::player_t, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
+	void set_player( Player, yaal::hcore::HString const&, yaal::hcore::HString const& = "30k" );
 	void set_info( int = DEFAULT::SIZE, int = 0, int = DEFAULT::KOMI, int = 0, int = 0, int = 0, yaal::hcore::HString const& = yaal::hcore::HString() );
 	void set_board_size( int );
 	void set_komi100( int );
@@ -288,7 +305,7 @@ public:
 private:
 	void clear_game( void );
 	bool is_first_move( void ) const;
-	Player::player_t first_to_move( void ) const;
+	Player first_to_move( void ) const;
 	void parse( void );
 	void parse_game_tree( void );
 	void parse_sequence( void );
@@ -297,26 +314,30 @@ private:
 	yaal::hcore::HString const& parse_property_ident( void );
 	void parse_property_value( prop_values_t& );
 	void not_eof( void );
-	void save_variations( Player::player_t, game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
+	void save_variations( Player, game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
 	void save_setup( game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
-	void save_move( Player::player_t, game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
+	void save_move( Player, game_tree_t::const_node_t, yaal::hcore::HStreamInterface&, bool );
 	SGF( SGF const& );
 	SGF& operator = ( SGF const& );
 };
 
 typedef yaal::hcore::HExceptionT<SGF> SGFException;
 
-inline void swap( SGF& a, SGF& b )
-	{ a.swap( b ); }
+inline void swap( SGF& a, SGF& b ) {
+	a.swap( b );
+}
 
-inline void swap( SGF::Move& a, SGF::Move& b )
-	{ a.swap( b ); }
+inline void swap( SGF::Move& a, SGF::Move& b ) {
+	a.swap( b );
+}
 
-inline void swap( SGF::Setup& a, SGF::Setup& b )
-	{ a.swap( b ); }
+inline void swap( SGF::Setup& a, SGF::Setup& b ) {
+	a.swap( b );
+}
 
-inline void swap( SGF::Coord& a, SGF::Coord& b )
-	{ a.swap( b ); }
+inline void swap( SGF::Coord& a, SGF::Coord& b ) {
+	a.swap( b );
+}
 
 void banner( void );
 
