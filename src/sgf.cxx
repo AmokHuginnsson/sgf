@@ -498,7 +498,7 @@ int parse_time( yaal::hcore::HString const& time_, int pos_ ) {
 				time += ( lexical_cast<int>( numStr ) * 60 );
 			} else if ( unit == 's' ) {
 				time += lexical_cast<int>( numStr );
-			} else if ( isspace( unit ) ) {
+			} else if ( is_whitespace( code_point_t( static_cast<wint_t>( unit ) ) ) ) {
 				continue;
 			} else {
 				throw SGFException( "Bad time: ", pos_ + i );
