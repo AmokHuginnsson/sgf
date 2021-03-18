@@ -288,7 +288,7 @@ yaal::hcore::HString SGF::get_result( void ) const {
 			result.clear();
 		}
 	}
-	return ( result );
+	return result;
 	M_EPILOG
 }
 
@@ -316,7 +316,7 @@ SGF::byoyomi_t SGF::get_byoyomi( void ) const {
 			throw SGFException( _errMsg_[static_cast<int>( ERROR::BAD_OVERTIME_DEFINITION )], 3 );
 		}
 	}
-	return ( byoyomi );
+	return byoyomi;
 	M_EPILOG
 }
 
@@ -349,7 +349,7 @@ inline HString::const_iterator non_space( HString::const_iterator first, HString
 			break;
 		}
 	}
-	return ( first );
+	return first;
 }
 
 void SGF::load( HStreamInterface& stream_ ) {
@@ -509,7 +509,7 @@ int parse_time( yaal::hcore::HString const& time_, int pos_ ) {
 	if ( ! numStr.is_empty() ) {
 		time += lexical_cast<int>( numStr );
 	}
-	return ( time );
+	return time;
 	M_EPILOG
 }
 
